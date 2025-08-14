@@ -53,6 +53,11 @@ const goeLevels: Record<number, number> = {
     [3]: 1.15
 };
 
+// Helper function to format numbers to 3 decimal places, removing trailing zeros
+const formatScore = (score: number): string => {
+    return parseFloat(score.toFixed(3)).toString();
+};
+
 const App = () => {
     const [scores, setScores] = useState<Score[]>([]);
     const [totalScore, setTotalScore] = useState(0);
@@ -62,10 +67,18 @@ const App = () => {
     const [goeLevel, setGoeLevel] = useState(0);
     const [activeTab, setActiveTab] = useState<'scoring' | 'details' | 'export'>('scoring');
 
-    const addTrick = (trickName: string, difficulty: string, baseScore: number) => {
-        let finalScore = baseScore;
-        let description = `${tricks.find(t => t.name === trickName)?.abbrev}(${difficulty})`;
-        let identifier = tricks.find(t => t.name === trickName)?.abbrev || '';
+    // New state for selected trick
+    const [selectedTrick, setSelectedTrick] = useState<{name: string, difficulty: string, baseScore: number} | null>(null);
+
+    const submitScore = () => {
+        if (!selectedTrick) {
+            alert('Please select a trick first');
+            return;
+        }
+
+        let finalScore = selectedTrick.baseScore;
+        let description = `${tricks.find(t => t.name === selectedTrick.name)?.abbrev}(${selectedTrick.difficulty})`;
+        let identifier = tricks.find(t => t.name === selectedTrick.name)?.abbrev || '';
 
         selectedFeatures.forEach(feature => {
             identifier += feature.abbrev;
@@ -94,9 +107,9 @@ const App = () => {
 
         const newScore: Score = {
             id: Date.now(),
-            trick: trickName,
-            difficulty,
-            baseScore,
+            trick: selectedTrick.name,
+            difficulty: selectedTrick.difficulty,
+            baseScore: selectedTrick.baseScore,
             features: [...selectedFeatures],
             goeLevel,
             multiplierLevel,
@@ -108,9 +121,15 @@ const App = () => {
         setScores([...scores, newScore]);
         setTotalScore(totalScore + finalScore);
 
+        // Reset selections
+        setSelectedTrick(null);
         setMultiplierLevel(null);
         setSelectedFeatures([]);
         setGoeLevel(0);
+    };
+
+    const selectTrick = (trickName: string, difficulty: string, baseScore: number) => {
+        setSelectedTrick({ name: trickName, difficulty, baseScore });
     };
 
     const removeScore = (scoreId: number) => {
@@ -127,6 +146,7 @@ const App = () => {
         setMultiplierLevel(null);
         setSelectedFeatures([]);
         setGoeLevel(0);
+        setSelectedTrick(null);
     };
 
     const getDifficultyColor = (difficulty: string) => {
@@ -167,6 +187,31 @@ const App = () => {
         }
     };
 
+    // Calculate preview score
+    const getPreviewScore = () => {
+        if (!selectedTrick) return 0;
+
+        let preview = selectedTrick.baseScore;
+
+        selectedFeatures.forEach(feature => {
+            if (feature.points) {
+                preview += feature.points;
+            } else if (feature.multiplier) {
+                preview *= feature.multiplier;
+            }
+        });
+
+        const goeMultiplier = goeLevels[goeLevel] ?? 1.0;
+        preview *= goeMultiplier;
+
+        const multiplier = multiplierLevel ? multiplierLevels[multiplierLevel] : 1;
+        if (multiplierLevel) {
+            preview *= multiplier;
+        }
+
+        return preview;
+    };
+
     // -------- EXPORT HELPERS (CSV & TXT) ----------
     const csvEscape = (val: any) => {
         const s = String(val ?? '');
@@ -174,7 +219,6 @@ const App = () => {
             return `"${s.replace(/"/g, '""')}"`;
         }
         return s;
-        // Note: Excel opens CSV files seamlessly.
     };
 
     const downloadFile = (filename: string, content: string, mime: string) => {
@@ -206,18 +250,18 @@ const App = () => {
                 s.features.map(f => f.abbrev).join(', '),
                 s.goeLevel >= 0 ? `+${s.goeLevel}` : `${s.goeLevel}`,
                 s.multiplierLevel ?? '',
-                s.finalScore.toFixed(1)
+                formatScore(s.finalScore)
             ]);
         });
         rows.push([]);
-        rows.push(['Total', '', '', '', '', '', '', '', totalScore.toFixed(1)]);
+        rows.push(['Total', '', '', '', '', '', '', '', formatScore(totalScore)]);
         return rows.map(r => r.map(csvEscape).join(',')).join('\n');
     };
 
     const buildTxt = () => {
         let txt = '';
         txt += `Competitor: ${competitorName}\n`;
-        txt += `Total: ${totalScore.toFixed(1)}\n\n`;
+        txt += `Total: ${formatScore(totalScore)}\n\n`;
         txt += `#  Identifier     | Trick (Diff)                | Base  | Features      | GOE | Mult | Final\n`;
         txt += `--------------------------------------------------------------------------------------------\n`;
         scores.forEach((s, i) => {
@@ -229,7 +273,7 @@ const App = () => {
                 `${s.features.map(f => f.abbrev).join(', ').padEnd(13)}| ` +
                 `${(s.goeLevel >= 0 ? `+${s.goeLevel}` : s.goeLevel).toString().padEnd(3)} | ` +
                 `${(s.multiplierLevel ?? '').toString().padEnd(5)}| ` +
-                `${s.finalScore.toFixed(1)}`;
+                `${formatScore(s.finalScore)}`;
             txt += line + '\n';
         });
         return txt;
@@ -266,7 +310,6 @@ const App = () => {
                         >
                             Score Details
                         </button>
-                        {/* NEW: Export tab */}
                         <button
                             onClick={() => setActiveTab('export')}
                             className={`tab-button ${activeTab === 'export' ? 'tab-active' : ''}`}
@@ -287,8 +330,23 @@ const App = () => {
                                     placeholder="Competitor Name"
                                 />
                                 <div className="score-display">
-                                    <div className="score-value">{totalScore.toFixed(1)}</div>
+                                    <div className="score-value">{formatScore(totalScore)}</div>
                                 </div>
+                            </div>
+
+                            {/* Submit Section */}
+                            <div className="section">
+                                <div className="section-title">
+                                    Submit Score {selectedTrick ? `- ${selectedTrick.name} (${selectedTrick.difficulty})` : ''}
+                                    {selectedTrick && ` - Preview: ${formatScore(getPreviewScore())}`}
+                                </div>
+                                <button
+                                    onClick={submitScore}
+                                    className={`submit-button ${selectedTrick ? 'submit-ready' : ''}`}
+                                    disabled={!selectedTrick}
+                                >
+                                    {selectedTrick ? `Submit Score (${formatScore(getPreviewScore())})` : 'Select a trick first'}
+                                </button>
                             </div>
 
                             {/* GOE Selector */}
@@ -355,14 +413,16 @@ const App = () => {
                                             {Object.entries(trick.scores).map(([difficulty, score]) => {
                                                 if (score === 0) return <div key={difficulty}></div>;
 
+                                                const isSelected = selectedTrick?.name === trick.name && selectedTrick?.difficulty === difficulty;
+
                                                 return (
                                                     <button
                                                         key={difficulty}
-                                                        onClick={() => addTrick(trick.name, difficulty, score)}
-                                                        className={`trick-button ${getDifficultyColor(difficulty)}`}
+                                                        onClick={() => selectTrick(trick.name, difficulty, score)}
+                                                        className={`trick-button ${getDifficultyColor(difficulty)} ${isSelected ? 'trick-selected' : ''}`}
                                                     >
                                                         <div className="difficulty-label">{difficulty}</div>
-                                                        <div className="score-label">{score}</div>
+                                                        <div className="score-label">{formatScore(score)}</div>
                                                     </button>
                                                 );
                                             })}
@@ -381,9 +441,9 @@ const App = () => {
                                                 key={score.id}
                                                 onClick={() => removeScore(score.id)}
                                                 className="remove-button"
-                                                title={`Remove: ${score.finalScore.toFixed(1)} pts`}
+                                                title={`Remove: ${formatScore(score.finalScore)} pts`}
                                             >
-                                                -{score.description} ({score.finalScore.toFixed(1)})
+                                                -{score.description} ({formatScore(score.finalScore)})
                                             </button>
                                         ))}
                                     </div>
@@ -402,7 +462,7 @@ const App = () => {
                             {/* Score Details Tab */}
                             <div className="details-header">
                                 <h2 className="details-title">Detailed Score Breakdown</h2>
-                                <div className="details-total">Total: {totalScore.toFixed(1)}</div>
+                                <div className="details-total">Total: {formatScore(totalScore)}</div>
                             </div>
 
                             {competitorName && (
@@ -417,13 +477,14 @@ const App = () => {
                                                 {index + 1}. {score.identifier}
                                             </div>
                                             <div className="detail-breakdown">
-                                                {score.trick} ({score.difficulty}) - Base: {score.baseScore}
+                                                {score.trick} ({score.difficulty}) - Base: {formatScore(score.baseScore)}
                                                 {score.features.length > 0 && ` + Features: ${score.features.map((f: any) => f.abbrev).join(', ')}`}
+                                                {score.goeLevel !== 0 && ` × GOE: ${goeLevels[score.goeLevel]}`}
                                                 {score.multiplierLevel && ` × Multiplier Level ${score.multiplierLevel}`}
                                             </div>
                                         </div>
                                         <div className="detail-score">
-                                            <div className="detail-points">{score.finalScore.toFixed(1)}</div>
+                                            <div className="detail-points">{formatScore(score.finalScore)}</div>
                                             <button
                                                 onClick={() => removeScore(score.id)}
                                                 className="detail-remove"
@@ -441,11 +502,10 @@ const App = () => {
                             </div>
                         </>
                     ) : (
-                        // -------- NEW EXPORT TAB (requires competitor name) --------
                         <>
                             <div className="details-header">
                                 <h2 className="details-title">Export / Submit</h2>
-                                <div className="details-total">Total: {totalScore.toFixed(1)}</div>
+                                <div className="details-total">Total: {formatScore(totalScore)}</div>
                             </div>
 
                             <div className="section">
@@ -481,7 +541,6 @@ const App = () => {
                                 </div>
                             </div>
                         </>
-                        // -----------------------------------------------------------
                     )}
                 </div>
             </div>
