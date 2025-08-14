@@ -2,11 +2,207 @@
 .goe-active {
     background-color: #059669 !important;
     color: white !important;
-}.app-container {
-     min-height: 100vh;
-     background-color: #f9fafb;
-     padding: 8px;
- }
+}
+
+/* Dark Mode Theme */
+.dark-mode {
+    background-color: #111827 !important;
+    color: #f9fafb;
+}
+
+.dark-mode .app-card {
+    background: #1f2937;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .app-title {
+    color: #f9fafb;
+}
+
+.dark-mode .tab-button {
+    color: #9ca3af;
+}
+
+.dark-mode .tab-button:hover {
+    color: #f3f4f6;
+}
+
+.dark-mode .competitor-input {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+.dark-mode .competitor-input:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+.dark-mode .score-display {
+    background-color: #1e3a8a;
+    color: #dbeafe;
+}
+
+.dark-mode .score-value {
+    color: #93c5fd;
+}
+
+.dark-mode .section-title {
+    color: #f3f4f6;
+}
+
+.dark-mode .submit-button {
+    background-color: #4b5563;
+}
+
+.dark-mode .submit-ready {
+    background-color: #047857 !important;
+}
+
+.dark-mode .level-button {
+    background-color: #374151;
+    color: #f9fafb;
+}
+
+.dark-mode .level-button:hover {
+    background-color: #4b5563;
+}
+
+.dark-mode .feature-button {
+    background-color: #374151;
+    color: #f9fafb;
+}
+
+.dark-mode .feature-button:hover {
+    background-color: #4b5563;
+}
+
+.dark-mode .selected-features {
+    color: #d1d5db;
+}
+
+.dark-mode .trick-row {
+    border-color: #4b5563;
+    background-color: #1f2937;
+}
+
+.dark-mode .trick-label {
+    color: #f3f4f6;
+}
+
+.dark-mode .trick-selected {
+    border: 3px solid #f59e0b !important;
+    box-shadow: 0 0 0 1px #f59e0b;
+}
+
+/* Dark mode difficulty colors - more different with increasing darkness */
+.dark-mode .difficulty-1d {
+    background-color: #047857;
+    border-color: #059669;
+}
+
+.dark-mode .difficulty-1d:hover {
+    background-color: #059669;
+}
+
+.dark-mode .difficulty-2d {
+    background-color: #ca8a04;
+    border-color: #eab308;
+}
+
+.dark-mode .difficulty-2d:hover {
+    background-color: #eab308;
+}
+
+.dark-mode .difficulty-3d {
+    background-color: #ea580c;
+    border-color: #f97316;
+}
+
+.dark-mode .difficulty-3d:hover {
+    background-color: #f97316;
+}
+
+.dark-mode .difficulty-4d {
+    background-color: #dc2626;
+    border-color: #ef4444;
+}
+
+.dark-mode .difficulty-4d:hover {
+    background-color: #ef4444;
+}
+
+.dark-mode .difficulty-vd {
+    background-color: #54358d;
+    border-color: #8b5cf6;
+}
+
+.dark-mode .difficulty-vd:hover {
+    background-color: #8b5cf6;
+}
+
+.dark-mode .remove-button {
+    background-color: #dc2626;
+}
+
+.dark-mode .remove-button:hover {
+    background-color: #b91c1c;
+}
+
+.dark-mode .reset-button {
+    background-color: #4b5563;
+}
+
+.dark-mode .reset-button:hover {
+    background-color: #374151;
+}
+
+.dark-mode .details-title {
+    color: #f9fafb;
+}
+
+.dark-mode .details-total {
+    color: #93c5fd;
+}
+
+.dark-mode .competitor-name {
+    color: #f3f4f6;
+}
+
+.dark-mode .detail-item {
+    background-color: #374151;
+}
+
+.dark-mode .detail-identifier {
+    color: #f9fafb;
+}
+
+.dark-mode .detail-breakdown {
+    color: #d1d5db;
+}
+
+.dark-mode .detail-points {
+    color: #f9fafb;
+}
+
+.dark-mode .detail-remove {
+    color: #f87171;
+}
+
+.dark-mode .detail-remove:hover {
+    color: #ef4444;
+}
+
+.dark-mode .no-scores {
+    color: #9ca3af;
+}
+
+.app-container {
+    min-height: 100vh;
+    background-color: #f9fafb;
+    padding: 8px;
+    transition: background-color 0.3s ease;
+}
 
 .app-content {
     max-width: 1280px;
@@ -18,6 +214,7 @@
     border-radius: 8px;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     padding: 16px;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .app-title {
@@ -26,6 +223,16 @@
     text-align: center;
     color: #374151;
     margin-bottom: 16px;
+    transition: color 0.3s ease;
+}
+
+.clickable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.clickable:hover {
+    opacity: 0.8;
 }
 
 /* Tab Navigation */
@@ -106,6 +313,34 @@
     flex-wrap: wrap;
 }
 
+/* Submit Button */
+.submit-button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    background-color: #9ca3af;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.submit-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.submit-ready {
+    background-color: #059669 !important;
+}
+
+.submit-ready:hover {
+    background-color: #047857 !important;
+}
+
 /* Level Buttons */
 .level-button {
     padding: 4px 12px;
@@ -125,10 +360,6 @@
 .level-active {
     background-color: #2563eb !important;
     color: white !important;
-}
-
-.level-button:first-child.level-active {
-    background-color: #6b7280 !important;
 }
 
 /* Feature Buttons */
@@ -170,9 +401,6 @@
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     padding: 8px;
-}
-
-.trick-row {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -199,6 +427,15 @@
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
+    position: relative;
+}
+
+/* Selected trick styling */
+.trick-selected {
+    border: 3px solid #1f2937 !important;
+    box-shadow: 0 0 0 1px #1f2937;
+    transform: scale(1.05);
+    z-index: 1;
 }
 
 .difficulty-1d {

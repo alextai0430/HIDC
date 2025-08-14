@@ -66,6 +66,7 @@ const App = () => {
     const [selectedFeatures, setSelectedFeatures] = useState<Feature[]>([]);
     const [goeLevel, setGoeLevel] = useState(0);
     const [activeTab, setActiveTab] = useState<'scoring' | 'details' | 'export'>('scoring');
+    const [darkMode, setDarkMode] = useState(false);
 
     // New state for selected trick
     const [selectedTrick, setSelectedTrick] = useState<{name: string, difficulty: string, baseScore: number} | null>(null);
@@ -129,7 +130,13 @@ const App = () => {
     };
 
     const selectTrick = (trickName: string, difficulty: string, baseScore: number) => {
-        setSelectedTrick({ name: trickName, difficulty, baseScore });
+        // If clicking the same trick and difficulty, deselect it
+        if (selectedTrick?.name === trickName && selectedTrick?.difficulty === difficulty) {
+            setSelectedTrick(null);
+        } else {
+            // Otherwise, select the new trick
+            setSelectedTrick({ name: trickName, difficulty, baseScore });
+        }
     };
 
     const removeScore = (scoreId: number) => {
@@ -291,10 +298,16 @@ const App = () => {
     // -----------------------------------------------
 
     return (
-        <div className="app-container">
+        <div className={`app-container ${darkMode ? 'dark-mode' : ''}`}>
             <div className="app-content">
                 <div className="app-card">
-                    <h1 className="app-title">Diabolo Scoring</h1>
+                    <h1
+                        className="app-title clickable"
+                        onClick={() => setDarkMode(!darkMode)}
+                        title="Click to toggle dark mode"
+                    >
+                        Diabolo Scoring
+                    </h1>
 
                     {/* Tab Navigation */}
                     <div className="tab-nav">
