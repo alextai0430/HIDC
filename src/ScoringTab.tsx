@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Feature, Score, SavedCompetitor, JudgeCategory } from './types';
 import { tricks, features, majorDeductions, multiplierLevels, goeLevels } from './constants';
 import { formatScore, getDifficultyColor } from './utils';
+import HotkeyManager, { HotkeyConfig } from './HotkeyManager';
 
 interface ScoringTabProps {
     competitorName: string;
@@ -66,6 +67,200 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                                                    cancelEdit,
                                                    submitFinalScore
                                                }) => {
+    const [showHotkeyManager, setShowHotkeyManager] = useState(false);
+    const [hotkeys, setHotkeys] = useState<HotkeyConfig>({
+        tricks: {},
+        levels: {},
+        features: {},
+        execution: {},
+        deductions: {}
+    });
+    const [hotkeyEnabled, setHotkeyEnabled] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Load hotkeys from localStorage on mount
+    useEffect(() => {
+        const savedHotkeys = localStorage.getItem('diabolo-hotkeys');
+        const savedEnabled = localStorage.getItem('diabolo-hotkeys-enabled');
+
+        if (savedHotkeys) {
+            try {
+                const parsedHotkeys = JSON.parse(savedHotkeys);
+                setHotkeys(parsedHotkeys);
+                console.log('Loaded hotkeys from localStorage:', parsedHotkeys);
+            } catch (error) {
+                console.error('Error loading hotkeys:', error);
+                // Reset to default if corrupted
+                localStorage.removeItem('diabolo-hotkeys');
+            }
+        }
+
+        if (savedEnabled !== null) {
+            setHotkeyEnabled(savedEnabled === 'true');
+        }
+    }, []);
+
+    // Save hotkeys to localStorage
+    const saveHotkeys = (newHotkeys: HotkeyConfig) => {
+        setHotkeys(newHotkeys);
+        localStorage.setItem('diabolo-hotkeys', JSON.stringify(newHotkeys));
+        console.log('Saved hotkeys to localStorage:', newHotkeys);
+    };
+
+    // Save hotkey enabled state
+    const toggleHotkeys = () => {
+        const newEnabled = !hotkeyEnabled;
+        setHotkeyEnabled(newEnabled);
+        localStorage.setItem('diabolo-hotkeys-enabled', newEnabled.toString());
+        console.log('Hotkeys enabled:', newEnabled);
+    };
+
+    // Handle keyboard events
+    useEffect(() => {
+        const handleKeyPress = (e: KeyboardEvent) => {
+            // Don't process hotkeys if:
+            // - Hotkeys are disabled
+            // - User is typing in an input field
+            // - Competitor is disqualified
+            // - Hotkey manager is open
+            if (!hotkeyEnabled ||
+                isDisqualified ||
+                showHotkeyManager ||
+                (e.target as HTMLElement)?.tagName === 'INPUT' ||
+                (e.target as HTMLElement)?.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            const key = e.key.toLowerCase();
+
+            // Check for trick hotkeys
+            if (hotkeys.tricks[key]) {
+                e.preventDefault();
+                const trickData = hotkeys.tricks[key];
+                selectTrick(trickData.name, trickData.difficulty, trickData.baseScore);
+                return;
+            }
+
+            // Check for level hotkeys
+            if (hotkeys.levels[key]) {
+                e.preventDefault();
+                toggleMultiplier(hotkeys.levels[key]);
+                return;
+            }
+
+            // Check for feature hotkeys
+            if (hotkeys.features[key]) {
+                e.preventDefault();
+                const featureName = hotkeys.features[key];
+                const feature = features.find(f => f.name === featureName);
+                if (feature) {
+                    toggleFeature(feature);
+                }
+                return;
+            }
+
+            // Check for execution hotkeys
+            if (hotkeys.execution[key]) {
+                e.preventDefault();
+                setGoeLevel(hotkeys.execution[key]);
+                return;
+            }
+
+            // Check for deduction hotkeys
+            if (hotkeys.deductions[key]) {
+                e.preventDefault();
+                const deduction = hotkeys.deductions[key];
+                selectDeduction(deduction);
+                return;
+            }
+
+            // Special hotkeys
+            switch (key) {
+                case 'enter':
+                    if (selectedTrick || selectedDeductions.length > 0) {
+                        e.preventDefault();
+                        submitScore();
+                    }
+                    break;
+                case 'escape':
+                    // Clear all selections
+                    if (selectedTrick || selectedDeductions.length > 0 || selectedFeatures.length > 0 ||
+                        goeLevel !== 0 || multiplierLevel !== null) {
+                        e.preventDefault();
+                        // Reset current selections without affecting saved scores
+                        setGoeLevel(0);
+                        // Fix: Only toggle multiplier if it's not null
+                        if (multiplierLevel !== null) {
+                            toggleMultiplier(multiplierLevel); // This will clear it
+                        }
+                        selectedFeatures.forEach(f => toggleFeature(f)); // Clear all features
+                        selectedDeductions.forEach(d => selectDeduction(d)); // Clear all deductions
+                        if (selectedTrick) {
+                            selectTrick(selectedTrick.name, selectedTrick.difficulty, selectedTrick.baseScore); // Clear trick
+                        }
+                    }
+                    break;
+            }
+        };
+
+        if (containerRef.current) {
+            containerRef.current.addEventListener('keydown', handleKeyPress);
+            containerRef.current.focus(); // Make sure the container can receive focus
+        }
+
+        return () => {
+            if (containerRef.current) {
+                containerRef.current.removeEventListener('keydown', handleKeyPress);
+            }
+        };
+    }, [hotkeyEnabled, isDisqualified, showHotkeyManager, hotkeys, selectedTrick, selectedDeductions, selectedFeatures, goeLevel, multiplierLevel]);
+
+    // Get hotkey display for buttons
+    const getHotkeyForTrick = (trickName: string, difficulty: string): string | null => {
+        for (const [key, value] of Object.entries(hotkeys.tricks)) {
+            if (value.name === trickName && value.difficulty === difficulty) {
+                return key.toUpperCase();
+            }
+        }
+        return null;
+    };
+
+    const getHotkeyForLevel = (level: number): string | null => {
+        for (const [key, value] of Object.entries(hotkeys.levels)) {
+            if (value === level) {
+                return key.toUpperCase();
+            }
+        }
+        return null;
+    };
+
+    const getHotkeyForFeature = (featureName: string): string | null => {
+        for (const [key, value] of Object.entries(hotkeys.features)) {
+            if (value === featureName) {
+                return key.toUpperCase();
+            }
+        }
+        return null;
+    };
+
+    const getHotkeyForExecution = (level: number): string | null => {
+        for (const [key, value] of Object.entries(hotkeys.execution)) {
+            if (value === level) {
+                return key.toUpperCase();
+            }
+        }
+        return null;
+    };
+
+    const getHotkeyForDeduction = (deductionName: string): string | null => {
+        for (const [key, value] of Object.entries(hotkeys.deductions)) {
+            if (value.name === deductionName) {
+                return key.toUpperCase();
+            }
+        }
+        return null;
+    };
+
     const canSaveCompetitor = competitorName.trim() && judgeName.trim() && (scores.length > 0 || isDisqualified);
 
     const handleSubmitFinalScore = () => {
@@ -76,7 +271,11 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
     const displayScore = isDisqualified ? 'DQ' : (showPoints ? formatScore(totalScore) : '***');
 
     return (
-        <div style={{ display: 'flex', gap: '16px' }}>
+        <div
+            ref={containerRef}
+            tabIndex={0}
+            style={{ display: 'flex', gap: '16px', outline: 'none' }}
+        >
             {/* Left Side - Recent Scores - Narrower */}
             <div className="recent-scores-panel" style={{ flex: '0 0 220px' }}>
                 {scores.length > 0 && (
@@ -237,6 +436,7 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                                         if (score === 0) return <div key={difficulty}></div>;
 
                                         const isSelected = selectedTrick?.name === trick.name && selectedTrick?.difficulty === difficulty;
+                                        const hotkey = getHotkeyForTrick(trick.name, difficulty);
 
                                         return (
                                             <button
@@ -244,8 +444,12 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                                                 onClick={() => !isDisqualified && selectTrick(trick.name, difficulty, score)}
                                                 className={`trick-button ${getDifficultyColor(difficulty)} ${isSelected ? 'trick-selected' : ''} ${isDisqualified ? 'disabled' : ''}`}
                                                 disabled={isDisqualified}
+                                                title={hotkey ? `Hotkey: ${hotkey}` : undefined}
                                             >
-                                                <div className="difficulty-label">{difficulty}</div>
+                                                <div className="difficulty-label">
+                                                    {difficulty}
+                                                    {hotkey && hotkeyEnabled && <div style={{fontSize: '9px', color: '#666'}}>{hotkey}</div>}
+                                                </div>
                                                 {showPoints && <div className="score-label">{formatScore(score)}</div>}
                                             </button>
                                         );
@@ -259,14 +463,20 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                         <div className="section-title">Major Deductions</div>
                         {majorDeductions.map((deduction) => {
                             const isSelected = selectedDeductions.find(d => d.name === deduction.name);
+                            const hotkey = getHotkeyForDeduction(deduction.name);
+
                             return (
                                 <button
                                     key={deduction.name}
                                     onClick={() => !isDisqualified && selectDeduction(deduction)}
                                     className={`deduction-button-selectable ${isSelected ? 'deduction-selected' : ''} ${isDisqualified ? 'disabled' : ''}`}
                                     disabled={isDisqualified}
+                                    title={hotkey ? `Hotkey: ${hotkey}` : undefined}
                                 >
-                                    <div className="deduction-name">{deduction.name}</div>
+                                    <div className="deduction-name">
+                                        {deduction.name}
+                                        {hotkey && hotkeyEnabled && <span style={{fontSize: '11px', color: '#666', marginLeft: '4px'}}>({hotkey})</span>}
+                                    </div>
                                     {showPoints && <div className="deduction-value">{deduction.points}</div>}
                                     <div className="deduction-abbrev">{deduction.abbrev}</div>
                                 </button>
@@ -287,16 +497,22 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                         Level{showPoints && (multiplierLevel ? `(×${multiplierLevels[multiplierLevel]})` : '(×1)')}:
                     </div>
                     <div className="button-row">
-                        {[1, 2, 3, 4, 5].map(level => (
-                            <button
-                                key={level}
-                                onClick={() => !isDisqualified && toggleMultiplier(level)}
-                                className={`level-button ${multiplierLevel === level ? 'level-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
-                                disabled={isDisqualified}
-                            >
-                                L{level}{showPoints && ` (×${multiplierLevels[level]})`}
-                            </button>
-                        ))}
+                        {[1, 2, 3, 4, 5].map(level => {
+                            const hotkey = getHotkeyForLevel(level);
+                            return (
+                                <button
+                                    key={level}
+                                    onClick={() => !isDisqualified && toggleMultiplier(level)}
+                                    className={`level-button ${multiplierLevel === level ? 'level-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
+                                    disabled={isDisqualified}
+                                    title={hotkey ? `Hotkey: ${hotkey}` : undefined}
+                                >
+                                    L{level}
+                                    {hotkey && hotkeyEnabled && <div style={{fontSize: '9px', color: '#666'}}>{hotkey}</div>}
+                                    {showPoints && ` (×${multiplierLevels[level]})`}
+                                </button>
+                            );
+                        })}
                     </div>
                     {multiplierLevel && (
                         <div className="selected-features">
@@ -309,16 +525,22 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                 <div className={`section ${isDisqualified ? 'disabled' : ''}`}>
                     <div className="section-title">Features:</div>
                     <div className="button-row">
-                        {features.map(feature => (
-                            <button
-                                key={feature.name}
-                                onClick={() => !isDisqualified && toggleFeature(feature)}
-                                className={`feature-button ${selectedFeatures.find(f => f.name === feature.name) ? 'feature-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
-                                disabled={isDisqualified}
-                            >
-                                {feature.abbrev}{showPoints && (feature.multiplier ? ` (×${feature.multiplier})` : ` (+${feature.points})`)}
-                            </button>
-                        ))}
+                        {features.map(feature => {
+                            const hotkey = getHotkeyForFeature(feature.name);
+                            return (
+                                <button
+                                    key={feature.name}
+                                    onClick={() => !isDisqualified && toggleFeature(feature)}
+                                    className={`feature-button ${selectedFeatures.find(f => f.name === feature.name) ? 'feature-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
+                                    disabled={isDisqualified}
+                                    title={hotkey ? `Hotkey: ${hotkey}` : undefined}
+                                >
+                                    {feature.abbrev}
+                                    {hotkey && hotkeyEnabled && <div style={{fontSize: '9px', color: '#666'}}>{hotkey}</div>}
+                                    {showPoints && (feature.multiplier ? ` (×${feature.multiplier})` : ` (+${feature.points})`)}
+                                </button>
+                            );
+                        })}
                     </div>
                     {selectedFeatures.length > 0 && (
                         <div className="selected-features">
@@ -333,16 +555,22 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                         Execution{showPoints && `(×${goeLevels[goeLevel]})`}:
                     </div>
                     <div className="button-row">
-                        {[-3, -2, -1, 0, 1, 2, 3].map(level => (
-                            <button
-                                key={level}
-                                onClick={() => !isDisqualified && setGoeLevel(level)}
-                                className={`level-button ${goeLevel === level ? 'goe-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
-                                disabled={isDisqualified}
-                            >
-                                E{level >= 0 ? '+' : ''}{level}{showPoints && ` (${Math.round((goeLevels[level] - 1) * 100)}%)`}
-                            </button>
-                        ))}
+                        {[-3, -2, -1, 0, 1, 2, 3].map(level => {
+                            const hotkey = getHotkeyForExecution(level);
+                            return (
+                                <button
+                                    key={level}
+                                    onClick={() => !isDisqualified && setGoeLevel(level)}
+                                    className={`level-button ${goeLevel === level ? 'goe-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
+                                    disabled={isDisqualified}
+                                    title={hotkey ? `Hotkey: ${hotkey}` : undefined}
+                                >
+                                    E{level >= 0 ? '+' : ''}{level}
+                                    {hotkey && hotkeyEnabled && <div style={{fontSize: '9px', color: '#666'}}>{hotkey}</div>}
+                                    {showPoints && ` (${Math.round((goeLevels[level] - 1) * 100)}%)`}
+                                </button>
+                            );
+                        })}
                     </div>
                     {goeLevel !== 0 && (
                         <div className="selected-features">
@@ -351,7 +579,7 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                     )}
                 </div>
 
-                {/* Submit Section - Disabled if DQ - Keep at bottom */}
+                {/* Submit Section - Disabled if DQ - Keep at bottom but before hotkeys */}
                 {!isDisqualified && (
                     <div className="section">
                         <div className="section-title">
@@ -368,10 +596,51 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                                 (showPoints ? `Submit Score (${formatScore(getPreviewScore())})` : 'Submit Score') :
                                 'Select a trick or deduction first'
                             }
+                            {hotkeyEnabled && (selectedTrick || selectedDeductions.length > 0) &&
+                                <span style={{fontSize: '11px', marginLeft: '8px'}}>(ENTER)</span>
+                            }
                         </button>
                     </div>
                 )}
+
+                {/* Hotkey Controls - MOVED TO THE VERY BOTTOM */}
+                <div className="section">
+                    <div className="section-title">Hotkeys:</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <button
+                            onClick={toggleHotkeys}
+                            className={`hotkey-config-button ${hotkeyEnabled ? 'level-active' : ''}`}
+                            style={hotkeyEnabled ? { backgroundColor: '#059669' } : {}}
+                        >
+                            {hotkeyEnabled ? 'Disable Hotkeys' : 'Enable Hotkeys'}
+                        </button>
+                        <button
+                            onClick={() => setShowHotkeyManager(true)}
+                            className="hotkey-config-button"
+                        >
+                            Configure Hotkeys
+                        </button>
+                    </div>
+                    {hotkeyEnabled && (
+                        <div className="selected-features" style={{ marginTop: '8px', fontSize: '11px' }}>
+                            Press ESC to clear selections, ENTER to submit
+                            <br/>
+                            {Object.keys(hotkeys.tricks).length + Object.keys(hotkeys.levels).length +
+                                Object.keys(hotkeys.features).length + Object.keys(hotkeys.execution).length +
+                                Object.keys(hotkeys.deductions).length} hotkeys configured
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* Hotkey Manager Modal */}
+            <HotkeyManager
+                isOpen={showHotkeyManager}
+                onClose={() => setShowHotkeyManager(false)}
+                hotkeys={hotkeys}
+                onSave={saveHotkeys}
+                showPoints={showPoints}
+            />
         </div>
     );
 };
