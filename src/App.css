@@ -1,1230 +1,482 @@
-/* Judge Input - Half width of competitor input */
-.judge-input {
-    width: 30% !important;
-    box-sizing: border-box;
-}
-
-/* Login Styles */
-.login-container {
-    min-height: 100vh;
-    background-color: #f9fafb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-}
-
-.login-card {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    padding: 32px;
-    width: 100%;
-    max-width: 400px;
-}
-
-.login-title {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    color: #374151;
-    margin-bottom: 24px;
-}
-
-.form-group {
-    margin-bottom: 16px;
-}
-
-.form-label {
-    display: block;
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 8px;
-}
-
-.form-input {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    outline: none;
-    font-size: 16px;
-    box-sizing: border-box;
-}
-
-.form-input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-.error-message {
-    color: #dc2626;
-    font-size: 14px;
-    margin-bottom: 16px;
-    text-align: center;
-}
-
-.login-button {
-    width: 100%;
-    background-color: #059669;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.login-button:hover {
-    background-color: #047857;
-}
-
-/* Editing Indicator */
-.editing-indicator {
-    color: #f59e0b;
-    font-size: 16px;
-    font-weight: normal;
-}
-
-/* Cancel Edit Button */
-.cancel-edit-button {
-    background-color: #f59e0b;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-}
-
-/* Selected trick styling */
-.trick-selected {
-    border: 3px solid #1f2937 !important;
-    box-shadow: 0 0 0 1px #1f2937;
-    transform: scale(1.05);
-    z-index: 1;
-}
-
-.difficulty-1d {
-    background-color: #dcfce7;
-    border-color: #bbf7d0;
-}
-
-.difficulty-1d:hover {
-    background-color: #bbf7d0;
-}
-
-.difficulty-2d {
-    background-color: #fef3c7;
-    border-color: #fde68a;
-}
-
-.difficulty-2d:hover {
-    background-color: #fde68a;
-}
-
-.difficulty-3d {
-    background-color: #fed7aa;
-    border-color: #fdba74;
-}
-
-.difficulty-3d:hover {
-    background-color: #fdba74;
-}
-
-.difficulty-4d {
-    background-color: #fecaca;
-    border-color: #fca5a5;
-}
-
-.difficulty-4d:hover {
-    background-color: #fca5a5;
-}
-
-.difficulty-vd {
-    background-color: #e9d5ff;
-    border-color: #d8b4fe;
-}
-
-.difficulty-vd:hover {
-    background-color: #d8b4fe;
-}
-
-.difficulty-label {
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.score-label {
-    font-size: 14px;
-    font-weight: bold;
-}
-
-/* Major Deductions */
-.major-deductions {
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Recent Scores */
-.recent-scores {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.remove-button {
-    background-color: #ef4444;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    border: none;
-    cursor: pointer;
-}
-
-.remove-button:hover {
-    background-color: #dc2626;
-}
-
-/* Reset Section */
-.reset-section {
-    text-align: center;
-}
-
-.reset-button {
-    background-color: #6b7280;
-    color: white;
-    padding: 4px 16px;
-    border-radius: 4px;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-}
-
-.reset-button:hover {
-    background-color: #4b5563;
-}
-
-/* Details Tab */
-.details-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.details-title {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.details-total {
-    font-size: 18px;
-    font-weight: bold;
-    color: #1e40af;
-}
-
-.competitor-name {
-    margin-bottom: 16px;
-    font-size: 18px;
-    font-weight: 500;
-    color: #374151;
-}
-
-.details-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.detail-item {
-    background-color: #f9fafb;
-    border-radius: 8px;
-    padding: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.detail-identifier {
-    font-weight: 500;
-}
-
-.detail-breakdown {
-    font-size: 14px;
-    color: #6b7280;
-}
-
-.detail-score {
-    text-align: right;
-}
-
-.detail-points {
-    font-weight: bold;
-    font-size: 18px;
-}
-
-.detail-remove {
-    color: #dc2626;
-    background: none;
-    border: none;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.detail-remove:hover {
-    color: #991b1b;
-}
-
-.no-scores {
-    text-align: center;
-    color: #6b7280;
-    padding: 32px 0;
-}
-
-/* Saved Competitors Tab */
-.competitor-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-height: 600px;
-    overflow-y: auto;
-    padding: 8px;
-    background-color: #f9fafb;
-    border-radius: 8px;
-}
-
-.competitor-item {
-    background-color: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-}
-
-.competitor-item:hover {
-    background-color: #f3f4f6;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.competitor-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 8px;
-}
-
-.competitor-item-name {
-    font-size: 18px;
-    font-weight: 600;
-    color: #374151;
-    margin: 0;
-}
-
-.delete-competitor {
-    color: #dc2626;
-    background: none;
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.delete-competitor:hover {
-    color: #991b1b;
-    background-color: #fef2f2;
-}
-
-.competitor-item-score {
-    font-size: 16px;
-    font-weight: 500;
-    color: #1e40af;
-    margin-bottom: 4px;
-}
-
-.competitor-item-date {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.competitor-item-tricks {
-    font-size: 14px;
-    color: #6b7280;
-}
-
-.submit-final-button {
-    background-color: #059669 !important;
-    color: white !important;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    width: 100%;
-    margin-bottom: 16px;
-    transition: all 0.2s;
-}
-
-.submit-final-button:hover {
-    background-color: #047857 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
-}
-
-.submit-final-button:disabled {
-    background-color: #9ca3af !important;
-    cursor: not-allowed;
-    opacity: 0.6;
-    transform: none;
-    box-shadow: none;
-}
-
-.no-competitors {
-    text-align: center;
-    color: #6b7280;
-    padding: 48px 16px;
-    font-style: italic;
-}
-
-.cancel-edit-button:hover {
-    background-color: #d97706;
-}
-
-/* Edit and Delete Actions */
-.competitor-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.edit-competitor {
-    color: #2563eb;
-    background: none;
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.edit-competitor:hover {
-    color: #1d4ed8;
-    background-color: #eff6ff;
-}
-
-/* GOE Buttons */
-.goe-active {
-    background-color: #059669 !important;
-    color: white !important;
-}
-
-/* Disabled buttons */
-.disabled {
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
-}
-
-/* New Deduction System */
-.deduction-button-selectable {
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 8px;
-    width: 100%;
-}
-
-.deduction-button-selectable:hover {
-    background-color: #f3f4f6;
-    border-color: #9ca3af;
-}
-
-.deduction-selected {
-    background-color: #fee2e2 !important;
-    border-color: #dc2626 !important;
-    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
-}
-
-.deduction-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 2px;
-}
-
-.deduction-value {
-    font-size: 14px;
-    font-weight: bold;
-    color: #dc2626;
-    margin-bottom: 2px;
-}
-
-.deduction-abbrev {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-/* Deduction difficulty color */
-.difficulty-deduction {
-    background-color: #fee2e2;
-    border-color: #fecaca;
-}
-
-.difficulty-deduction:hover {
-    background-color: #fecaca;
-}
-
-/* Detail item styling for deductions */
-.deduction-item-detail {
-    background-color: #fee2e2 !important;
-    border-left: 4px solid #dc2626;
-}
-
-.deduction-points {
-    color: #dc2626 !important;
-    font-weight: bold;
-}
-
-/* DQ Score Display Styling */
-.score-disqualified {
-    background-color: #fee2e2 !important;
-    border: 2px solid #dc2626 !important;
-}
-
-/* DQ styling for disabled sections */
-.disabled .trick-button,
-.disabled .level-button,
-.disabled .feature-button,
-.disabled .deduction-button-selectable {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background-color: #f3f4f6 !important;
-    color: #9ca3af !important;
-    border-color: #d1d5db !important;
-}
-
-.disabled .trick-button:hover,
-.disabled .level-button:hover,
-.disabled .feature-button:hover,
-.disabled .deduction-button-selectable:hover {
-    background-color: #f3f4f6 !important;
-    border-color: #d1d5db !important;
-    transform: none;
-}
-
-/* Dark Mode Theme */
-.dark-mode {
-    background-color: #111827 !important;
-    color: #f9fafb;
-}
-
-.dark-mode .app-card {
-    background: #1f2937;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
-}
-
-.dark-mode .app-title {
-    color: #f9fafb;
-}
-
-.dark-mode .editing-indicator {
-    color: #fbbf24;
-}
-
-.dark-mode .tab-button {
-    color: #9ca3af;
-}
-
-.dark-mode .tab-button:hover {
-    color: #f3f4f6;
-}
-
-.dark-mode .competitor-input {
-    background-color: #374151;
-    border-color: #4b5563;
-    color: #f9fafb;
-}
-
-.dark-mode .competitor-input:focus {
-    border-color: #60a5fa;
-    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
-}
-
-.dark-mode .score-display {
-    background-color: #1e3a8a;
-    color: #dbeafe;
-}
-
-.dark-mode .score-disqualified {
-    background-color: #7f1d1d !important;
-    border-color: #dc2626 !important;
-    color: #fecaca;
-}
-
-.dark-mode .score-value {
-    color: #93c5fd;
-}
-
-.dark-mode .section-title {
-    color: #f3f4f6;
-}
-
-.dark-mode .submit-button {
-    background-color: #4b5563;
-}
-
-.dark-mode .submit-ready {
-    background-color: #047857 !important;
-}
-
-.dark-mode .level-button {
-    background-color: #374151;
-    color: #f9fafb;
-}
-
-.dark-mode .level-button:hover {
-    background-color: #4b5563;
-}
-
-.dark-mode .feature-button {
-    background-color: #374151;
-    color: #f9fafb;
-}
-
-.dark-mode .feature-button:hover {
-    background-color: #4b5563;
-}
-
-.dark-mode .selected-features {
-    color: #d1d5db;
-}
-
-.dark-mode .trick-row {
-    border-color: #4b5563;
-    background-color: #1f2937;
-}
-
-.dark-mode .trick-label {
-    color: #f3f4f6;
-}
-
-.dark-mode .trick-selected {
-    border: 3px solid #f59e0b !important;
-    box-shadow: 0 0 0 1px #f59e0b;
-}
-
-/* Dark mode difficulty colors */
-.dark-mode .difficulty-1d {
-    background-color: #047857;
-    border-color: #059669;
-}
-
-.dark-mode .difficulty-1d:hover {
-    background-color: #059669;
-}
-
-.dark-mode .difficulty-2d {
-    background-color: #ca8a04;
-    border-color: #eab308;
-}
-
-.dark-mode .difficulty-2d:hover {
-    background-color: #eab308;
-}
-
-.dark-mode .difficulty-3d {
-    background-color: #ea580c;
-    border-color: #f97316;
-}
-
-.dark-mode .difficulty-3d:hover {
-    background-color: #f97316;
-}
-
-.dark-mode .difficulty-4d {
-    background-color: #dc2626;
-    border-color: #ef4444;
-}
-
-.dark-mode .difficulty-4d:hover {
-    background-color: #ef4444;
-}
-
-.dark-mode .difficulty-vd {
-    background-color: #54358d;
-    border-color: #8b5cf6;
-}
-
-.dark-mode .difficulty-vd:hover {
-    background-color: #8b5cf6;
-}
-
-.dark-mode .difficulty-deduction {
-    background-color: #7f1d1d;
-    border-color: #dc2626;
-}
-
-.dark-mode .difficulty-deduction:hover {
-    background-color: #991b1b;
-}
-
-.dark-mode .remove-button {
-    background-color: #dc2626;
-}
-
-.dark-mode .remove-button:hover {
-    background-color: #b91c1c;
-}
-
-.dark-mode .reset-button {
-    background-color: #4b5563;
-}
-
-.dark-mode .reset-button:hover {
-    background-color: #374151;
-}
-
-.dark-mode .details-title {
-    color: #f9fafb;
-}
-
-.dark-mode .details-total {
-    color: #93c5fd;
-}
-
-.dark-mode .competitor-name {
-    color: #f3f4f6;
-}
-
-.dark-mode .detail-item {
-    background-color: #374151;
-}
-
-.dark-mode .detail-identifier {
-    color: #f9fafb;
-}
-
-.dark-mode .detail-breakdown {
-    color: #d1d5db;
-}
-
-.dark-mode .detail-points {
-    color: #f9fafb;
-}
-
-.dark-mode .detail-remove {
-    color: #f87171;
-}
-
-.dark-mode .detail-remove:hover {
-    color: #ef4444;
-}
-
-.dark-mode .no-scores {
-    color: #9ca3af;
-}
-
-/* Dark mode styles for saved competitors */
-.dark-mode .competitor-list {
-    background-color: #1f2937;
-}
-
-.dark-mode .competitor-item {
-    background-color: #374151;
-    border-color: #4b5563;
-}
-
-.dark-mode .competitor-item:hover {
-    background-color: #4b5563;
-}
-
-.dark-mode .competitor-item-name {
-    color: #f9fafb;
-}
-
-.dark-mode .competitor-item-score {
-    color: #93c5fd;
-}
-
-.dark-mode .competitor-item-date {
-    color: #9ca3af;
-}
-
-.dark-mode .delete-competitor {
-    color: #f87171;
-}
-
-.dark-mode .delete-competitor:hover {
-    color: #ef4444;
-}
-
-.dark-mode .edit-competitor {
-    color: #60a5fa;
-}
-
-.dark-mode .edit-competitor:hover {
-    color: #3b82f6;
-    background-color: #1e3a8a;
-}
-
-/* Dark mode styles for new deduction system */
-.dark-mode .major-deductions {
-    background-color: #1f2937;
-    border-color: #4b5563;
-}
-
-.dark-mode .deduction-button-selectable {
-    background-color: #374151;
-    border-color: #4b5563;
-}
-
-.dark-mode .deduction-button-selectable:hover {
-    background-color: #4b5563;
-    border-color: #6b7280;
-}
-
-.dark-mode .deduction-selected {
-    background-color: #7f1d1d !important;
-    border-color: #dc2626 !important;
-}
-
-.dark-mode .deduction-name {
-    color: #f3f4f6;
-}
-
-.dark-mode .deduction-value {
-    color: #fca5a5;
-}
-
-.dark-mode .deduction-abbrev {
-    color: #9ca3af;
-}
-
-.dark-mode .deduction-item-detail {
-    background-color: #7f1d1d !important;
-    border-left-color: #dc2626;
-}
-
-.dark-mode .deduction-points {
-    color: #fca5a5 !important;
-}
-
-.dark-mode .cancel-edit-button {
-    background-color: #d97706;
-}
-
-.dark-mode .cancel-edit-button:hover {
-    background-color: #b45309;
-}
-
-/* Dark mode disabled sections for DQ */
-.dark-mode .disabled .trick-button,
-.dark-mode .disabled .level-button,
-.dark-mode .disabled .feature-button,
-.dark-mode .disabled .deduction-button-selectable {
-    background-color: #1f2937 !important;
-    color: #4b5563 !important;
-    border-color: #374151 !important;
-}
-
-.app-container {
-    min-height: 100vh;
-    background-color: #f9fafb;
-    padding: 8px;
-    transition: background-color 0.3s ease;
-}
-
-.app-content {
-    max-width: 1280px;
-    margin: 0 auto;
-}
-
-.app-card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    padding: 16px;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.app-title {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    color: #374151;
-    margin-bottom: 16px;
-    transition: color 0.3s ease;
-}
-
-.clickable {
-    cursor: pointer;
-    user-select: none;
-}
-
-.clickable:hover {
-    opacity: 0.8;
-}
-
-/* Tab Navigation */
-.tab-nav {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.tab-button {
-    padding: 8px 16px;
-    font-weight: 500;
-    background: none;
-    border: none;
-    color: #6b7280;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s ease;
-}
-
-.tab-button:hover {
-    color: #374151;
-}
-
-.tab-active {
-    color: #2563eb !important;
-    border-bottom-color: #2563eb !important;
-}
-
-/* Disabled tab styling */
-.tab-button.disabled {
-    color: #9ca3af !important;
-    cursor: not-allowed !important;
-    opacity: 0.6;
-}
-
-.tab-button.disabled:hover {
-    color: #9ca3af !important;
-}
-
-.dark-mode .tab-button.disabled {
-    color: #4b5563 !important;
-}
-
-.dark-mode .tab-button.disabled:hover {
-    color: #4b5563 !important;
-}
-
-/* Competitor Section */
-.competitor-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-.competitor-input {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    outline: none;
-}
-
-.competitor-input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-.score-display {
-    background-color: #dbeafe;
-    border-radius: 8px;
-    padding: 8px;
-    text-align: center;
-}
-
-.score-value {
-    font-size: 20px;
-    font-weight: bold;
-    color: #1e40af;
-}
-
-/* Sections */
-.section {
-    margin-bottom: 16px;
-}
-
-.section-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 8px;
-}
-
-.button-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-/* Submit Button */
-.submit-button {
-    padding: 8px 16px;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    background-color: #9ca3af;
-    color: white;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-    width: 100%;
-    margin-bottom: 8px;
-}
-
-.submit-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.submit-ready {
-    background-color: #059669 !important;
-}
-
-.submit-ready:hover {
-    background-color: #047857 !important;
-}
-
-/* Level Buttons */
-.level-button {
-    padding: 4px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    background-color: #e5e7eb;
-    color: #374151;
-    border: none;
-    cursor: pointer;
-}
-
-.level-button:hover {
-    background-color: #d1d5db;
-}
-
-.level-active {
-    background-color: #2563eb !important;
-    color: white !important;
-}
-
-/* Feature Buttons */
-.feature-button {
-    padding: 4px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    background-color: #e5e7eb;
-    color: #374151;
-    border: none;
-    cursor: pointer;
-}
-
-.feature-button:hover {
-    background-color: #d1d5db;
-}
-
-.feature-active {
-    background-color: #10b981 !important;
-    color: white !important;
-}
-
-.selected-features {
-    margin-top: 8px;
-    font-size: 14px;
-    color: #6b7280;
-}
-
-/* Tricks and Deductions Layout */
-.tricks-and-deductions {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-@media (max-width: 1024px) {
-    .tricks-and-deductions {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Tricks Grid */
-.tricks-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-}
-
-.trick-row {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.trick-label {
-    width: 32px;
-    text-align: center;
-    font-weight: bold;
-    color: #374151;
-}
-
-.trick-buttons {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
-}
-
-.trick-button {
-    border: 1px solid transparent;
-    border-radius: 4px;
-    padding: 4px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-}
+.app-card {background: white; border-radius: 8px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); padding: 16px; transition: background-color 0.3s ease, box-shadow 0.3s ease;}
+
+.app-container {min-height: 100vh; background-color: #f9fafb; padding: 8px; transition: background-color 0.3s ease;}
+
+.app-content {max-width: 1280px; margin: 0 auto;}
+
+.app-title {font-size: 24px; font-weight: bold; text-align: center; color: #374151; margin-bottom: 16px; transition: color 0.3s ease;}
+
+.button-row {display: flex; gap: 8px; flex-wrap: wrap;}
+
+.cancel-edit-button:hover, .dark-mode .cancel-edit-button {background-color: #d97706;}
+
+.clickable {cursor: pointer; user-select: none;}
+
+.clickable:hover {opacity: 0.8;}
+
+.competitor-input {padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; outline: none;}
+
+.competitor-input:focus, .form-input:focus {border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);}
+
+.competitor-item {background-color: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.2s ease; position: relative;}
+
+.competitor-item-date, .deduction-abbrev {font-size: 12px; color: #6b7280;}
+
+.competitor-item-header {display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;}
+
+.competitor-item-name {font-size: 18px; font-weight: 600; color: #374151; margin: 0;}
+
+.competitor-item-score {font-size: 16px; font-weight: 500; color: #1e40af; margin-bottom: 4px;}
+
+.competitor-item-tricks, .detail-breakdown {font-size: 14px; color: #6b7280;}
+
+.competitor-item:hover {background-color: #f3f4f6; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);}
+
+.competitor-name {margin-bottom: 16px; font-size: 18px; font-weight: 500; color: #374151;}
+
+.competitor-selected {background-color: #eff6ff !important; border-color: #2563eb !important; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);}
+
+.competitor-selected:hover {background-color: #dbeafe !important;}
+
+.dark-mode .app-card {background: #1f2937; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);}
+
+.dark-mode .app-title, .dark-mode .competitor-item-name, .dark-mode .detail-identifier, .dark-mode .detail-points, .dark-mode .details-title {color: #f9fafb;}
+
+.dark-mode .cancel-edit-button:hover {background-color: #b45309;}
+
+.dark-mode .competitor-checkbox {accent-color: #60a5fa;}
+
+.dark-mode .competitor-input, .dark-mode .performance-score-button {background-color: #374151; border-color: #4b5563; color: #f9fafb;}
+
+.dark-mode .competitor-input:focus {border-color: #60a5fa; box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);}
+
+.dark-mode .competitor-item, .dark-mode .deduction-button-selectable {background-color: #374151; border-color: #4b5563;}
+
+.dark-mode .competitor-item-date, .dark-mode .deduction-abbrev, .dark-mode .no-scores, .dark-mode .tab-button {color: #9ca3af;}
+
+.dark-mode .competitor-item-score, .dark-mode .details-total, .dark-mode .score-value {color: #93c5fd;}
+
+.dark-mode .competitor-item:hover, .dark-mode .feature-button:hover, .dark-mode .level-button:hover, .dark-mode .reset-button, .dark-mode .submit-button, .reset-button:hover {background-color: #4b5563;}
+
+.dark-mode .competitor-name, .dark-mode .deduction-name, .dark-mode .section-title, .dark-mode .tab-button:hover, .dark-mode .trick-label {color: #f3f4f6;}
+
+.dark-mode .competitor-selected:hover {background-color: #1e40af !important;}
+
+.dark-mode .deduction-button-selectable:hover, .dark-mode .performance-score-button:hover {background-color: #4b5563; border-color: #6b7280;}
+
+.dark-mode .deduction-item-detail {background-color: #7f1d1d !important; border-left-color: #dc2626;}
+
+.dark-mode .deduction-points {color: #fca5a5 !important;}
+
+.dark-mode .deduction-selected {background-color: #7f1d1d !important; border-color: #dc2626 !important;}
+
+.dark-mode .deduction-value {color: #fca5a5;}
+
+.dark-mode .delete-competitor, .dark-mode .detail-remove {color: #f87171;}
+
+.dark-mode .delete-competitor:hover, .dark-mode .detail-remove:hover {color: #ef4444;}
+
+.dark-mode .detail-breakdown, .dark-mode .selected-features {color: #d1d5db;}
+
+.dark-mode .detail-item, .dark-mode .reset-button:hover {background-color: #374151;}
+
+.dark-mode .difficulty-1d:hover {background-color: #059669;}
+
+.dark-mode .difficulty-2d {background-color: #ca8a04; border-color: #eab308;}
+
+.dark-mode .difficulty-2d:hover {background-color: #eab308;}
+
+.dark-mode .difficulty-3d {background-color: #ea580c; border-color: #f97316;}
+
+.dark-mode .difficulty-3d:hover {background-color: #f97316;}
+
+.dark-mode .difficulty-4d {background-color: #dc2626; border-color: #ef4444;}
+
+.dark-mode .difficulty-4d:hover {background-color: #ef4444;}
+
+.dark-mode .difficulty-deduction {background-color: #7f1d1d; border-color: #dc2626;}
+
+.dark-mode .difficulty-deduction:hover {background-color: #991b1b;}
+
+.dark-mode .difficulty-vd {background-color: #54358d; border-color: #8b5cf6;}
+
+.dark-mode .difficulty-vd:hover {background-color: #8b5cf6;}
+
+.dark-mode .disabled .deduction-button-selectable, .dark-mode .disabled .feature-button, .dark-mode .disabled .level-button, /* Dark mode disabled sections for DQ */
+.dark-mode .disabled .trick-button {background-color: #1f2937 !important; color: #4b5563 !important; border-color: #374151 !important;}
+
+.dark-mode .edit-competitor {color: #60a5fa;}
+
+.dark-mode .edit-competitor:hover {color: #3b82f6; background-color: #1e3a8a;}
+
+.dark-mode .editing-indicator {color: #fbbf24;}
+
+.dark-mode .feature-button, .dark-mode .level-button {background-color: #374151; color: #f9fafb;}
+
+.dark-mode .performance-score-button.active {background-color: #60a5fa !important; color: #1f2937 !important; border-color: #60a5fa !important;}
+
+.dark-mode .performance-total-item {background-color: #1e3a8a !important; border-left-color: #60a5fa !important;}
+
+.dark-mode .performance-total-points {color: #93c5fd !important;}
+
+.dark-mode .remove-button, .remove-button:hover {background-color: #dc2626;}
+
+.dark-mode .remove-button:hover {background-color: #b91c1c;}
+
+.dark-mode .score-display {background-color: #1e3a8a; color: #dbeafe;}
+
+.dark-mode .score-disqualified {background-color: #7f1d1d !important; border-color: #dc2626 !important; color: #fecaca;}
+
+.dark-mode .submit-ready, .submit-ready:hover {background-color: #047857 !important;}
+
+.dark-mode .tab-button.disabled, .dark-mode .tab-button.disabled:hover {color: #4b5563 !important;}
+
+.dark-mode .trick-row {border-color: #4b5563; background-color: #1f2937;}
+
+.dark-mode .trick-selected {border: 3px solid #f59e0b !important; box-shadow: 0 0 0 1px #f59e0b;}
+
+.deduction-button-selectable:hover, .performance-score-button:hover {background-color: #f3f4f6; border-color: #9ca3af;}
+
+.deduction-name {font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 2px;}
+
+.deduction-points {color: #dc2626 !important; font-weight: bold;}
+
+.deduction-selected {background-color: #fee2e2 !important; border-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);}
+
+.deduction-value {font-size: 14px; font-weight: bold; color: #dc2626; margin-bottom: 2px;}
+
+.delete-competitor {color: #dc2626; background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s;}
+
+.delete-competitor:hover {color: #991b1b; background-color: #fef2f2;}
+
+.detail-identifier {font-weight: 500;}
+
+.detail-item {background-color: #f9fafb; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center;}
+
+.detail-points {font-weight: bold; font-size: 18px;}
+
+.detail-remove {color: #dc2626; background: none; border: none; font-size: 12px; cursor: pointer;}
+
+.detail-remove:hover {color: #991b1b;}
+
+.detail-score {text-align: right;}
+
+.details-list {display: flex; flex-direction: column; gap: 8px;}
+
+.details-title {font-size: 20px; font-weight: bold;}
+
+.details-total {font-size: 18px; font-weight: bold; color: #1e40af;}
+
+.difficulty-1d {background-color: #dcfce7; border-color: #bbf7d0;}
+
+.difficulty-1d:hover {background-color: #bbf7d0;}
+
+.difficulty-2d {background-color: #fef3c7; border-color: #fde68a;}
+
+.difficulty-2d:hover {background-color: #fde68a;}
+
+.difficulty-3d {background-color: #fed7aa; border-color: #fdba74;}
+
+.difficulty-3d:hover {background-color: #fdba74;}
+
+.difficulty-4d {background-color: #fecaca; border-color: #fca5a5;}
+
+.difficulty-4d:hover {background-color: #fca5a5;}
+
+.difficulty-deduction:hover {background-color: #fecaca;}
+
+.difficulty-label {font-size: 12px; font-weight: bold;}
+
+.difficulty-vd {background-color: #e9d5ff; border-color: #d8b4fe;}
+
+.difficulty-vd:hover {background-color: #d8b4fe;}
+
+.disabled .deduction-button-selectable, .disabled .feature-button, .disabled .level-button, /* DQ styling for disabled sections */
+.disabled .trick-button {opacity: 0.5; cursor: not-allowed; background-color: #f3f4f6 !important; color: #9ca3af !important; border-color: #d1d5db !important;}
+
+.disabled .deduction-button-selectable:hover, .disabled .feature-button:hover, .disabled .level-button:hover, .disabled .trick-button:hover {background-color: #f3f4f6 !important; border-color: #d1d5db !important; transform: none;}
+
+.edit-competitor {color: #2563eb; background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s;}
+
+.edit-competitor:hover {color: #1d4ed8; background-color: #eff6ff;}
+
+.error-message {color: #dc2626; font-size: 14px; margin-bottom: 16px; text-align: center;}
+
+.feature-active {background-color: #10b981 !important; color: white !important;}
+
+.feature-button:hover, .level-button:hover {background-color: #d1d5db;}
+
+.form-group, /* Sections */
+.section {margin-bottom: 16px;}
+
+.form-input {width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; font-size: 16px; box-sizing: border-box;}
+
+.form-label {display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px;}
+
+.level-active {background-color: #2563eb !important; color: white !important;}
+
+.login-button {width: 100%; background-color: #059669; color: white; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; border: none; cursor: pointer; transition: background-color 0.2s;}
+
+.login-button:hover {background-color: #047857;}
+
+.login-card {background-color: white; border-radius: 8px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); padding: 32px; width: 100%; max-width: 400px;}
+
+.login-title {font-size: 24px; font-weight: bold; text-align: center; color: #374151; margin-bottom: 24px;}
+
+.no-competitors {text-align: center; color: #6b7280; padding: 48px 16px; font-style: italic;}
+
+.no-scores {text-align: center; color: #6b7280; padding: 32px 0;}
+
+.performance-score-button {min-width: 45px; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 4px; background-color: #f9fafb; color: #374151; font-size: 14px; cursor: pointer; transition: all 0.2s;}
+
+.performance-score-button.active {background-color: #2563eb !important; color: white !important; border-color: #2563eb !important;}
+
+.performance-total-item {background-color: #f0f9ff !important; border-left: 4px solid #0ea5e9 !important;}
+
+.remove-button {background-color: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; border: none; cursor: pointer;}
+
+.reset-button {background-color: #6b7280; color: white; padding: 4px 16px; border-radius: 4px; font-size: 14px; border: none; cursor: pointer;}
+
+.score-display {background-color: #dbeafe; border-radius: 8px; padding: 8px; text-align: center;}
+
+.score-label {font-size: 14px; font-weight: bold;}
+
+.score-value {font-size: 20px; font-weight: bold; color: #1e40af;}
+
+.section-title {font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px;}
+
+.selected-features {margin-top: 8px; font-size: 14px; color: #6b7280;}
+
+.submit-button:disabled {cursor: not-allowed; opacity: 0.6;}
+
+.submit-final-button {background-color: #059669 !important; color: white !important; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; border: none; cursor: pointer; width: 100%; margin-bottom: 16px; transition: all 0.2s;}
+
+.submit-final-button:disabled {background-color: #9ca3af !important; cursor: not-allowed; opacity: 0.6; transform: none; box-shadow: none;}
+
+.submit-final-button:hover {background-color: #047857 !important; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);}
+
+.submit-ready {background-color: #059669 !important;}
+
+.tab-active {color: #2563eb !important; border-bottom-color: #2563eb !important;}
+
+.tab-button {padding: 8px 16px; font-weight: 500; background: none; border: none; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s ease;}
+
+.tab-button.disabled:hover {color: #9ca3af !important;}
+
+.tab-button:hover {color: #374151;}
+
+.trick-button {border: 1px solid transparent; border-radius: 4px; padding: 4px; text-align: center; cursor: pointer; transition: all 0.2s;}
+
+.trick-buttons {flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;}
+
+.trick-label {width: 32px; text-align: center; font-weight: bold; color: #374151;}
+
+.trick-row {border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; display: flex; align-items: center; gap: 8px;}
 
 /* Add these styles to your existing App.css */
 
 /* Competitor Selection Styles */
-.competitor-checkbox {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: #2563eb;
-}
+.competitor-checkbox {width: 18px; height: 18px; cursor: pointer; accent-color: #2563eb;}
 
-.competitor-selected {
-    background-color: #eff6ff !important;
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
+/* Cancel Edit Button */
+.cancel-edit-button {background-color: #f59e0b; color: white; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s; position: relative;}
 
-.competitor-selected:hover {
-    background-color: #dbeafe !important;
-}
+/* Competitor Section */
+.competitor-section {display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;}
+
+/* DQ Score Display Styling */
+.score-disqualified {background-color: #fee2e2 !important; border: 2px solid #dc2626 !important;}
+
+/* Dark Mode Theme */
+.dark-mode {background-color: #111827 !important; color: #f9fafb;}
+
+/* Dark mode difficulty colors */
+.dark-mode .difficulty-1d {background-color: #047857; border-color: #059669;}
 
 /* Dark mode styles for competitor selection */
-.dark-mode .competitor-selected {
-    background-color: #1e3a8a !important;
-    border-color: #60a5fa !important;
-    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
-}
+.dark-mode .competitor-selected {background-color: #1e3a8a !important; border-color: #60a5fa !important; box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);}
 
-.dark-mode .competitor-selected:hover {
-    background-color: #1e40af !important;
-}
-
-.dark-mode .competitor-checkbox {
-    accent-color: #60a5fa;
-}
-/* Performance Scoring Styles */
-.performance-summary {
-    background-color: #f0f9ff;
-    border: 1px solid #0ea5e9;
-    border-radius: 8px;
-    padding: 16px;
-    margin-top: 16px;
-}
-
-.performance-total-item {
-    background-color: #f0f9ff !important;
-    border-left: 4px solid #0ea5e9 !important;
-}
-
-.performance-total-points {
-    color: #0ea5e9 !important;
-    font-size: 20px !important;
-    font-weight: bold;
-}
+/* Dark mode styles for new deduction system */
+.dark-mode .major-deductions {background-color: #1f2937; border-color: #4b5563;}
 
 /* Dark mode styles for performance scoring */
-.dark-mode .performance-summary {
-    background-color: #1e3a8a;
-    border-color: #60a5fa;
-}
+.dark-mode .performance-summary {background-color: #1e3a8a; border-color: #60a5fa;}
 
-.dark-mode .performance-total-item {
-    background-color: #1e3a8a !important;
-    border-left-color: #60a5fa !important;
-}
+/* Dark mode styles for saved competitors */
+.dark-mode .competitor-list {background-color: #1f2937;}
 
-.dark-mode .performance-total-points {
-    color: #93c5fd !important;
-}
+/* Deduction difficulty color */
+.difficulty-deduction {background-color: #fee2e2; border-color: #fecaca;}
+
+/* Detail item styling for deductions */
+.deduction-item-detail {background-color: #fee2e2 !important; border-left: 4px solid #dc2626;}
+
+/* Details Tab */
+.details-header {display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;}
+
+/* Disabled buttons */
+.disabled {opacity: 0.5 !important; cursor: not-allowed !important;}
+
+/* Disabled tab styling */
+.tab-button.disabled {color: #9ca3af !important; cursor: not-allowed !important; opacity: 0.6;}
+
+/* Edit and Delete Actions */
+.competitor-actions {display: flex; gap: 8px;}
+
+/* Editing Indicator */
+.editing-indicator {color: #f59e0b; font-size: 16px; font-weight: normal;}
+
+/* Feature Buttons */
+.feature-button, /* Level Buttons */
+.level-button {padding: 4px 12px; border-radius: 4px; font-size: 14px; font-weight: 500; background-color: #e5e7eb; color: #374151; border: none; cursor: pointer;}
+
+/* GOE Buttons */
+.goe-active {background-color: #059669 !important; color: white !important;}
+
+/* Judge Input - Half width of competitor input */
+performance-total-points {color: #0ea5e9 !important; font-size: 20px !important; font-weight: bold;}
+
+/* Login Styles */
+.login-container {min-height: 100vh; background-color: #f9fafb; display: flex; align-items: center; justify-content: center; padding: 16px;}
+
+/* Major Deductions */
+.major-deductions {background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px;}
+
+/* New Deduction System */
+.deduction-button-selectable {background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s; margin-bottom: 8px; width: 100%;}
+
+/* Performance Scoring Styles */
+.performance-summary {background-color: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px; margin-top: 16px;}
+
+/* Recent Scores */
+.recent-scores {display: flex; flex-wrap: wrap; gap: 4px;}
+
+/* Recent Scores Panel - Narrower width */
+.recent-scores-panel {flex: 0 0 220px !important; min-width: 220px;}
+
+/* Reset Section */
+.reset-section {text-align: center;}
+
+/* Saved Competitors Tab */
+.competitor-list {display: flex; flex-direction: column; gap: 12px; max-height: 600px; overflow-y: auto; padding: 8px; background-color: #f9fafb; border-radius: 8px;}
 
 /* Score buttons for performance categories */
-.performance-score-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 8px;
+.performance-score-buttons {display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;}
+
+/* Selected trick styling */
+.trick-selected {border: 3px solid #1f2937 !important; box-shadow: 0 0 0 1px #1f2937; transform: scale(1.05); z-index: 1;}
+
+/* Submit Button */
+.submit-button {padding: 8px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; background-color: #9ca3af; color: white; border: none; cursor: pointer; transition: all 0.2s; width: 100%; margin-bottom: 8px;}
+
+/* Tab Navigation */
+.tab-nav {display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb;}
+
+/* Tricks and Deductions Layout */
+.tricks-and-deductions {display: grid; grid-template-columns: 1fr 300px; gap: 16px; margin-bottom: 16px;}
+
+@media (max-width: 1024px) {.tricks-and-deductions { grid-template-columns: 1fr;}
+
+    judge-input {width: 30% !important; box-sizing: border-box;}
+
 }
 
-.performance-score-button {
-    min-width: 45px;
-    padding: 6px 8px;
-    border: 1px solid #d1d5db;
+/* Tricks Grid */
+.tricks-grid {display: grid; grid-template-columns: 1fr; gap: 8px;}
+
+/* Add these styles to App.css to remove number input arrows */
+
+/* Remove number input arrows for all browsers */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Judge score input styling - ensure proper alignment */
+.judge-score-input {
+    width: 80px !important;
+    padding: 6px;
     border-radius: 4px;
-    background-color: #f9fafb;
-    color: #374151;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
+    border: 1px solid #d1d5db;
+    text-align: center;
+    appearance: textfield;
+    -webkit-appearance: textfield;
+    -moz-appearance: textfield;
+    background-color: white;
 }
 
-.performance-score-button:hover {
-    background-color: #f3f4f6;
-    border-color: #9ca3af;
+.judge-score-input:disabled {
+    background-color: #f3f4f6 !important;
+    color: #6b7280;
 }
 
-.performance-score-button.active {
-    background-color: #2563eb !important;
-    color: white !important;
-    border-color: #2563eb !important;
+.judge-score-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    outline: none;
 }
 
-.dark-mode .performance-score-button {
+/* Dark mode support for judge inputs */
+.dark-mode .judge-score-input {
     background-color: #374151;
     border-color: #4b5563;
     color: #f9fafb;
 }
 
-.dark-mode .performance-score-button:hover {
-    background-color: #4b5563;
-    border-color: #6b7280;
+.dark-mode .judge-score-input:disabled {
+    background-color: #1f2937 !important;
+    color: #4b5563;
 }
 
-.dark-mode .performance-score-button.active {
-    background-color: #60a5fa !important;
-    color: #1f2937 !important;
-    border-color: #60a5fa !important;
+.dark-mode .judge-score-input:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+/* Table alignment improvements */
+.rankings-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    table-layout: fixed;
+}
+
+.rankings-table th,
+.rankings-table td {
+    vertical-align: middle;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.rankings-table th {
+    background-color: #f9fafb;
+    font-weight: bold;
+    padding: 12px;
+}
+
+.rankings-table td {
+    padding: 8px;
+}
+
+/* Dark mode table styling */
+.dark-mode .rankings-table {
+    background-color: #1f2937;
+    border-color: #4b5563;
+}
+
+.dark-mode .rankings-table th {
+    background-color: #374151;
+    color: #f9fafb;
+}
+
+.dark-mode .rankings-table th,
+.dark-mode .rankings-table td {
+    border-bottom-color: #4b5563;
 }

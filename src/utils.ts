@@ -20,19 +20,6 @@ export const formatDate = (dateString: string) => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-// Calculate adjusted technical score based on highest technical score
-export const calculateAdjustedScore = (competitorScore: number, highestScore: number): number => {
-    if (highestScore === 0) return 0;
-    return (competitorScore / highestScore) * 70;
-};
-
-// Get highest technical score from all competitors
-export const getHighestTechnicalScore = (competitors: any[]): number => {
-    const technicalCompetitors = competitors.filter(comp => comp.judgeCategory === 'technical');
-    if (technicalCompetitors.length === 0) return 0;
-    return Math.max(...technicalCompetitors.map(comp => comp.totalScore));
-};
-
 // Export helpers
 export const csvEscape = (val: any) => {
     const s = String(val ?? '');
@@ -54,4 +41,34 @@ export const downloadFile = (filename: string, content: string, mime: string) =>
         URL.revokeObjectURL(url);
         document.body.removeChild(a);
     }, 0);
+};
+
+// Updated utils.ts - Add these helper functions for better text alignment
+// Add these functions to your existing utils.ts file
+
+// Existing exports should remain unchanged
+
+// Helper function to ensure consistent column width padding
+export const padColumn = (text: string, width: number, align: 'left' | 'right' | 'center' = 'left'): string => {
+    const str = String(text || '');
+    if (str.length >= width) {
+        return str.substring(0, width);
+    }
+
+    const padding = width - str.length;
+    switch (align) {
+        case 'right':
+            return ' '.repeat(padding) + str;
+        case 'center':
+            const leftPad = Math.floor(padding / 2);
+            const rightPad = padding - leftPad;
+            return ' '.repeat(leftPad) + str + ' '.repeat(rightPad);
+        default: // 'left'
+            return str + ' '.repeat(padding);
+    }
+};
+
+// Helper function to create consistent separator lines
+export const createSeparatorLine = (totalWidth: number, char: string = '-'): string => {
+    return char.repeat(totalWidth);
 };

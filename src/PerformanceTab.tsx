@@ -38,8 +38,9 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
                                                            cancelEdit,
                                                            submitFinalScore
                                                        }) => {
-    const canSaveCompetitor = competitorName.trim() && judgeName.trim() &&
-        (Object.values(performanceScores).some(score => score > 0) || isDisqualified);
+    // Allow saving as long as competitor name and judge name are provided
+    // No longer require performance scores > 0
+    const canSaveCompetitor = competitorName.trim() && judgeName.trim();
 
     const handleSubmitFinalScore = () => {
         // Automatically set to performance when submitting from performance tab
@@ -146,7 +147,7 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
                     title={
                         !competitorName.trim() ? 'Enter competitor name to save' :
                             !judgeName.trim() ? 'Enter judge name to save' :
-                                (!Object.values(performanceScores).some(score => score > 0) && !isDisqualified ? 'No performance scores entered or DQ competitor' : 'Save competitor with performance scores')
+                                'Save competitor with performance scores'
                     }
                 >
                     {editingCompetitor ? 'Update Performance Competitor' : 'Save Performance Competitor'}

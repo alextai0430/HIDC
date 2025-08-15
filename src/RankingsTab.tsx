@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SavedCompetitor } from './types';
-import { formatScore, calculateAdjustedScore, getHighestTechnicalScore, csvEscape, downloadFile, formatDate } from './utils';
+import { formatScore, csvEscape, downloadFile, formatDate } from './utils';
 
 interface RankingsTabProps {
     savedCompetitors: SavedCompetitor[];
@@ -12,13 +12,11 @@ type ExportOrder = 'ranking' | 'submission';
 const RankingsTab: React.FC<RankingsTabProps> = ({ savedCompetitors }) => {
     const [rankingView, setRankingView] = useState<RankingView>('technical');
 
-    const highestTechnicalScore = getHighestTechnicalScore(savedCompetitors);
-
     // Process competitors for rankings
     const processCompetitorsForRanking = () => {
         return savedCompetitors.map(competitor => {
-            const adjustedTechnicalScore = competitor.judgeCategory === 'technical'
-                ? competitor.isDisqualified ? 0 : calculateAdjustedScore(competitor.totalScore, highestTechnicalScore)
+            const technicalScore = competitor.judgeCategory === 'technical'
+                ? competitor.isDisqualified ? 0 : competitor.totalScore
                 : 0;
 
             const performanceScore = competitor.judgeCategory === 'performance'
@@ -27,7 +25,7 @@ const RankingsTab: React.FC<RankingsTabProps> = ({ savedCompetitors }) => {
 
             return {
                 ...competitor,
-                adjustedTechnicalScore,
+                technicalScore,
                 performanceScore
             };
         });
@@ -45,7 +43,7 @@ const RankingsTab: React.FC<RankingsTabProps> = ({ savedCompetitors }) => {
                         if (a.isDisqualified && !b.isDisqualified) return 1;
                         if (!a.isDisqualified && b.isDisqualified) return -1;
                         if (a.isDisqualified && b.isDisqualified) return 0;
-                        return b.adjustedTechnicalScore - a.adjustedTechnicalScore;
+                        return b.technicalScore - a.technicalScore;
                     });
 
             case 'performance':
@@ -86,8 +84,8 @@ const RankingsTab: React.FC<RankingsTabProps> = ({ savedCompetitors }) => {
             case 'technical':
                 return (
                     <div className="detail-score">
-                        <div className="detail-points">{formatScore(competitor.adjustedTechnicalScore)}</div>
-                        <div className="detail-breakdown">Adjusted Technical Score</div>
+                        <div className="detail-points">{formatScore(competitor.technicalScore)}</div>
+                        <div className="detail-breakdown">Technical Score</div>
                     </div>
                 );
 
@@ -115,7 +113,7 @@ const RankingsTab: React.FC<RankingsTabProps> = ({ savedCompetitors }) => {
     const getRankingDescription = () => {
         switch (rankingView) {
             case 'technical':
-                return 'Ranked by adjusted technical scores (out of 70 points)';
+                return 'Ranked by technical scores';
             case 'performance':
             default:
                 return 'Ranked by performance scores (out of 30 points)';
@@ -140,7 +138,7 @@ const RankingsTab: React.FC<RankingsTabProps> = ({ savedCompetitors }) => {
         competitors.forEach((competitor, index) => {
             const score = competitor.isDisqualified ? 'DQ' :
                 (rankingView === 'technical' ?
-                    formatScore(competitor.adjustedTechnicalScore) :
+                    formatScore(competitor.technicalScore) :
                     `${formatScore(competitor.performanceScore)}/30.0`);
 
             const status = competitor.isDisqualified ? 'Disqualified' : 'Qualified';
@@ -164,24 +162,54 @@ const RankingsTab: React.FC<RankingsTabProps> = ({ savedCompetitors }) => {
         txt += `${order === 'ranking' ? 'Ordered by Rank (1st to Last)' : 'Ordered by Submission Time'}\n`;
         txt += `Generated: ${formatDate(new Date().toISOString())}\n\n`;
 
+        // Define column widths
+        const colWidths = {
+            rank: 5,         // Rank/Order
+            competitor: 22,  // Competitor name
+            judge: 16,       // Judge name
+            score: 14,       // Score
+            status: 8        // Status
+        };
+
+        // Helper function to pad text to column width
+        const padColumn = (text: string, width: number, align: 'left' | 'right' = 'left'): string => {
+            const str = String(text || '');
+            if (str.length >= width) return str.substring(0, width);
+            const padding = width - str.length;
+            return align === 'right' ? ' '.repeat(padding) + str : str + ' '.repeat(padding);
+        };
+
         const header = order === 'ranking' ? 'Rank' : 'Order';
-        txt += `${header.padEnd(5)} | Competitor${' '.repeat(15)} | Judge${' '.repeat(10)} | Score${' '.repeat(8)} | Status\n`;
-        txt += `${''.padEnd(80, '-')}\n`;
+
+        // Create header row
+        const headerRow =
+            padColumn(header, colWidths.rank) + '| ' +
+            padColumn('Competitor', colWidths.competitor) + '| ' +
+            padColumn('Judge', colWidths.judge) + '| ' +
+            padColumn('Score', colWidths.score) + '| ' +
+            padColumn('Status', colWidths.status);
+
+        txt += headerRow + '\n';
+
+        // Calculate total width for separator
+        const totalWidth = Object.values(colWidths).reduce((sum, width) => sum + width, 0) +
+            (Object.keys(colWidths).length - 1) * 2;
+        txt += '-'.repeat(totalWidth) + '\n';
 
         competitors.forEach((competitor, index) => {
             const score = competitor.isDisqualified ? 'DQ' :
                 (rankingView === 'technical' ?
-                    formatScore(competitor.adjustedTechnicalScore) :
+                    formatScore(competitor.technicalScore) :
                     `${formatScore(competitor.performanceScore)}/30.0`);
 
             const status = competitor.isDisqualified ? 'DQ' : 'OK';
 
             const line =
-                `${String(index + 1).padEnd(5)} | ` +
-                `${competitor.name.padEnd(20)} | ` +
-                `${competitor.judgeName.padEnd(15)} | ` +
-                `${score.padEnd(13)} | ` +
-                `${status}`;
+                padColumn((index + 1).toString(), colWidths.rank) + '| ' +
+                padColumn(competitor.name, colWidths.competitor) + '| ' +
+                padColumn(competitor.judgeName, colWidths.judge) + '| ' +
+                padColumn(score, colWidths.score) + '| ' +
+                padColumn(status, colWidths.status);
 
             txt += line + '\n';
         });
@@ -302,9 +330,9 @@ const RankingsTab: React.FC<RankingsTabProps> = ({ savedCompetitors }) => {
                     <div className="selected-features">
                         {rankingView === 'technical' ? (
                             <>
-                                • Technical scores are adjusted to a 70-point scale based on the highest technical score achieved
+                                • Technical scores are ranked by total points earned
                                 <br />
-                                • This ensures fair comparison across different technical performances
+                                • Higher scores rank better
                                 <br />
                                 • Disqualified competitors receive 0 points and are placed last
                             </>
