@@ -8,6 +8,13 @@ yarn-error.log*
 /build
 /dist
 
+# Environment variables (IMPORTANT: Keep credentials secret!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
 # Runtime data
 pids
 *.pid
