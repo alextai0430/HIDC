@@ -1,141 +1,171 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
+import { Feature, Score, SavedCompetitor } from './types';
+import { tricks, features, majorDeductions, multiplierLevels, goeLevels } from './constants';
+import { formatScore } from './utils';
+import Login from './Login';
+import ScoringTab from './ScoringTab';
+import ScoreDetailsTab from './ScoreDetailsTab';
+import ExportSubmitTab from './ExportSubmitTab';
+import SavedCompetitorsTab from './SavedCompetitorsTab';
 
-interface Feature {
-    name: string;
-    abbrev: string;
-    multiplier?: number;
-    points?: number;
-    type: string;
-}
-
-interface Score {
-    id: number;
-    trick: string;
-    difficulty: string;
-    baseScore: number;
-    features: Feature[];
-    goeLevel: number;
-    multiplierLevel: number | null;
-    finalScore: number;
-    description: string;
-    identifier: string;
-}
-
-const tricks = [
-    { name: 'Shuffle', abbrev: '#', scores: { '1D': 0, '2D': 0.7, '3D': 6, '4D': 15, 'VD': 0 } },
-    { name: 'Toss/High', abbrev: 'T', scores: { '1D': 0.1, '2D': 1, '3D': 6, '4D': 12, 'VD': 0.2 } },
-    { name: 'Orbit', abbrev: 'O', scores: { '1D': 0.2, '2D': 1.2, '3D': 4, '4D': 8, 'VD': 0.5 } },
-    { name: 'Feed the sun', abbrev: 'F', scores: { '1D': 0, '2D': 1.5, '3D': 5, '4D': 10, 'VD': 0 } },
-    { name: 'Swing/Sun', abbrev: 'S', scores: { '1D': 0.1, '2D': 1, '3D': 6, '4D': 12, 'VD': 0.2 } },
-    { name: 'Whip', abbrev: 'W', scores: { '1D': 0.2, '2D': 0, '3D': 0, '4D': 0, 'VD': 0.4 } },
-    { name: 'Stick Release/Gen', abbrev: 'R', scores: { '1D': 0.4, '2D': 1.2, '3D': 6, '4D': 12, 'VD': 1 } }
-];
-
-const features: Feature[] = [
-    { name: 'Turn 360', abbrev: 'T1', multiplier: 1.7, type: 'turn' },
-    { name: 'Turn 720', abbrev: 'T2', multiplier: 3.0, type: 'turn' },
-    { name: 'Turn 1080', abbrev: 'T3', multiplier: 5.0, type: 'turn' },
-    { name: 'Acro', abbrev: 'A', points: 0.2, type: 'acro' }
-];
-
-const multiplierLevels: Record<number, number> = {
-    1: 2, 2: 4, 3: 6, 4: 8, 5: 10
-};
-
-const goeLevels: Record<number, number> = {
-    [-3]: 0.7,
-    [-2]: 0.8,
-    [-1]: 0.9,
-    [0]: 1.0,
-    [1]: 1.05,
-    [2]: 1.1,
-    [3]: 1.15
-};
-
-// Helper function to format numbers to 3 decimal places, removing trailing zeros
-const formatScore = (score: number): string => {
-    return parseFloat(score.toFixed(3)).toString();
-};
-
-const App = () => {
+const App: React.FC = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [scores, setScores] = useState<Score[]>([]);
     const [totalScore, setTotalScore] = useState(0);
     const [competitorName, setCompetitorName] = useState('');
     const [multiplierLevel, setMultiplierLevel] = useState<number | null>(null);
     const [selectedFeatures, setSelectedFeatures] = useState<Feature[]>([]);
     const [goeLevel, setGoeLevel] = useState(0);
-    const [activeTab, setActiveTab] = useState<'scoring' | 'details' | 'export'>('scoring');
+    const [activeTab, setActiveTab] = useState<'scoring' | 'details' | 'export' | 'saved'>('scoring');
     const [darkMode, setDarkMode] = useState(false);
+    const [savedCompetitors, setSavedCompetitors] = useState<SavedCompetitor[]>([]);
+    const [selectedCompetitorDetails, setSelectedCompetitorDetails] = useState<SavedCompetitor | null>(null);
+    const [editingCompetitor, setEditingCompetitor] = useState<SavedCompetitor | null>(null);
 
-    // New state for selected trick
+    // New state for selected trick and deductions
     const [selectedTrick, setSelectedTrick] = useState<{name: string, difficulty: string, baseScore: number} | null>(null);
+    const [selectedDeduction, setSelectedDeduction] = useState<{name: string, points: number, abbrev: string} | null>(null);
+
+    // Handle login
+    const handleLogin = () => {
+        setIsAuthenticated(true);
+    };
+
+    // Load saved competitors from localStorage on mount
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const saved = localStorage.getItem('diabolo-saved-competitors');
+        if (saved) {
+            try {
+                const parsedCompetitors = JSON.parse(saved);
+                setSavedCompetitors(parsedCompetitors);
+                console.log('Loaded competitors from localStorage:', parsedCompetitors.length);
+            } catch (error) {
+                console.error('Error loading saved competitors:', error);
+                localStorage.removeItem('diabolo-saved-competitors');
+            }
+        }
+    }, [isAuthenticated]);
+
+    // Save competitors to localStorage whenever savedCompetitors changes
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        localStorage.setItem('diabolo-saved-competitors', JSON.stringify(savedCompetitors));
+        console.log('Saved competitors to localStorage:', savedCompetitors.length);
+    }, [savedCompetitors, isAuthenticated]);
+
+    // Show login form if not authenticated
+    if (!isAuthenticated) {
+        return <Login onLogin={handleLogin} />;
+    }
 
     const submitScore = () => {
-        if (!selectedTrick) {
-            alert('Please select a trick first');
+        if (!selectedTrick && !selectedDeduction) {
+            alert('Please select a trick or deduction first');
             return;
         }
 
-        let finalScore = selectedTrick.baseScore;
-        let description = `${tricks.find(t => t.name === selectedTrick.name)?.abbrev}(${selectedTrick.difficulty})`;
-        let identifier = tricks.find(t => t.name === selectedTrick.name)?.abbrev || '';
+        if (selectedTrick) {
+            // Handle regular trick scoring
+            let finalScore = selectedTrick.baseScore;
+            let description = `${tricks.find(t => t.name === selectedTrick.name)?.abbrev}(${selectedTrick.difficulty})`;
+            let identifier = tricks.find(t => t.name === selectedTrick.name)?.abbrev || '';
 
-        selectedFeatures.forEach(feature => {
-            identifier += feature.abbrev;
-            if (feature.points) {
-                finalScore += feature.points;
-                description += `+${feature.abbrev}`;
-            } else if (feature.multiplier) {
-                finalScore *= feature.multiplier;
-                description += `*${feature.abbrev}`;
+            selectedFeatures.forEach(feature => {
+                identifier += feature.abbrev;
+                if (feature.points) {
+                    finalScore += feature.points;
+                    description += `+${feature.abbrev}`;
+                } else if (feature.multiplier) {
+                    finalScore *= feature.multiplier;
+                    description += `*${feature.abbrev}`;
+                }
+            });
+
+            const goeMultiplier = goeLevels[goeLevel] ?? 1.0;
+            finalScore *= goeMultiplier;
+            if (goeLevel !== 0) {
+                identifier += `G${goeLevel >= 0 ? '+' : ''}${goeLevel}`;
+                description += `*G${goeLevel >= 0 ? '+' : ''}${goeLevel}`;
             }
-        });
 
-        const goeMultiplier = goeLevels[goeLevel] ?? 1.0;
-        finalScore *= goeMultiplier;
-        if (goeLevel !== 0) {
-            identifier += `G${goeLevel >= 0 ? '+' : ''}${goeLevel}`;
-            description += `*G${goeLevel >= 0 ? '+' : ''}${goeLevel}`;
+            const multiplier = multiplierLevel ? multiplierLevels[multiplierLevel] : 1;
+            if (multiplierLevel) {
+                identifier += `M${multiplierLevel}`;
+                finalScore *= multiplier;
+                description += `×${multiplier}`;
+            }
+
+            const newScore: Score = {
+                id: Date.now(),
+                trick: selectedTrick.name,
+                difficulty: selectedTrick.difficulty,
+                baseScore: selectedTrick.baseScore,
+                features: [...selectedFeatures],
+                goeLevel,
+                multiplierLevel,
+                finalScore,
+                description,
+                identifier
+            };
+
+            setScores([...scores, newScore]);
+            setTotalScore(totalScore + finalScore);
+
+        } else if (selectedDeduction) {
+            // Handle deduction scoring
+            const newScore: Score = {
+                id: Date.now(),
+                trick: selectedDeduction.name,
+                difficulty: 'DEDUCTION',
+                baseScore: selectedDeduction.points,
+                features: [],
+                goeLevel: 0,
+                multiplierLevel: null,
+                finalScore: selectedDeduction.points,
+                description: `${selectedDeduction.abbrev} (${selectedDeduction.points})`,
+                identifier: selectedDeduction.abbrev
+            };
+
+            setScores([...scores, newScore]);
+            setTotalScore(totalScore + selectedDeduction.points);
         }
-
-        const multiplier = multiplierLevel ? multiplierLevels[multiplierLevel] : 1;
-        if (multiplierLevel) {
-            identifier += `M${multiplierLevel}`;
-            finalScore *= multiplier;
-            description += `×${multiplier}`;
-        }
-
-        const newScore: Score = {
-            id: Date.now(),
-            trick: selectedTrick.name,
-            difficulty: selectedTrick.difficulty,
-            baseScore: selectedTrick.baseScore,
-            features: [...selectedFeatures],
-            goeLevel,
-            multiplierLevel,
-            finalScore,
-            description,
-            identifier
-        };
-
-        setScores([...scores, newScore]);
-        setTotalScore(totalScore + finalScore);
 
         // Reset selections
         setSelectedTrick(null);
+        setSelectedDeduction(null);
         setMultiplierLevel(null);
         setSelectedFeatures([]);
         setGoeLevel(0);
     };
 
     const selectTrick = (trickName: string, difficulty: string, baseScore: number) => {
+        // Clear deduction selection
+        setSelectedDeduction(null);
+
         // If clicking the same trick and difficulty, deselect it
         if (selectedTrick?.name === trickName && selectedTrick?.difficulty === difficulty) {
             setSelectedTrick(null);
         } else {
-            // Otherwise, select the new trick
             setSelectedTrick({ name: trickName, difficulty, baseScore });
+        }
+    };
+
+    const selectDeduction = (deduction: {name: string, points: number, abbrev: string}) => {
+        // Clear trick selection and related features
+        setSelectedTrick(null);
+        setSelectedFeatures([]);
+        setMultiplierLevel(null);
+        setGoeLevel(0);
+
+        // Toggle deduction selection
+        if (selectedDeduction?.name === deduction.name) {
+            setSelectedDeduction(null);
+        } else {
+            setSelectedDeduction(deduction);
         }
     };
 
@@ -154,20 +184,89 @@ const App = () => {
         setSelectedFeatures([]);
         setGoeLevel(0);
         setSelectedTrick(null);
+        setSelectedDeduction(null);
+        setEditingCompetitor(null);
     };
 
-    const getDifficultyColor = (difficulty: string) => {
-        switch (difficulty) {
-            case '1D': return 'difficulty-1d';
-            case '2D': return 'difficulty-2d';
-            case '3D': return 'difficulty-3d';
-            case '4D': return 'difficulty-4d';
-            case 'VD': return 'difficulty-vd';
-            default: return 'difficulty-default';
+    const loadCompetitorForEditing = (competitor: SavedCompetitor) => {
+        // Remove the competitor from saved list temporarily
+        setSavedCompetitors(prev => prev.filter(comp => comp.id !== competitor.id));
+
+        // Load their data into the current scoring session
+        setCompetitorName(competitor.name);
+        setScores(competitor.scores);
+        setTotalScore(competitor.totalScore);
+        setEditingCompetitor(competitor);
+
+        // Switch to scoring tab
+        setActiveTab('scoring');
+
+        // Clear selections
+        setSelectedTrick(null);
+        setSelectedDeduction(null);
+        setMultiplierLevel(null);
+        setSelectedFeatures([]);
+        setGoeLevel(0);
+    };
+
+    const submitFinalScore = () => {
+        if (!competitorName.trim()) {
+            alert('Please enter a competitor name');
+            return;
+        }
+
+        if (scores.length === 0) {
+            alert('Please add some scores before submitting');
+            return;
+        }
+
+        const newSavedCompetitor: SavedCompetitor = {
+            id: editingCompetitor ? editingCompetitor.id : Date.now().toString(),
+            name: competitorName.trim(),
+            totalScore: totalScore,
+            scores: [...scores],
+            submittedAt: new Date().toISOString()
+        };
+
+        setSavedCompetitors(prev => [...prev, newSavedCompetitor]);
+
+        // Reset everything
+        resetScores();
+        setCompetitorName('');
+
+        // Switch to saved competitors tab
+        setActiveTab('saved');
+
+        if (editingCompetitor) {
+            alert('Competitor score updated successfully!');
+        } else {
+            alert('Competitor score submitted successfully!');
+        }
+    };
+
+    const cancelEdit = () => {
+        if (editingCompetitor && window.confirm('Are you sure you want to cancel editing? The original score will be restored.')) {
+            // Restore the original competitor
+            setSavedCompetitors(prev => [...prev, editingCompetitor]);
+            resetScores();
+            setCompetitorName('');
+            setActiveTab('saved');
+        }
+    };
+
+    const deleteCompetitor = (competitorId: string) => {
+        if (window.confirm('Are you sure you want to delete this competitor?')) {
+            setSavedCompetitors(prev => prev.filter(comp => comp.id !== competitorId));
+            if (selectedCompetitorDetails?.id === competitorId) {
+                setSelectedCompetitorDetails(null);
+            }
         }
     };
 
     const toggleFeature = (feature: Feature) => {
+        // Can't use features with deductions
+        if (selectedDeduction) return;
+
         if (feature.type === 'turn') {
             const otherTurns = selectedFeatures.filter(f => f.type !== 'turn');
             const isCurrentlySelected = selectedFeatures.find(f => f.name === feature.name);
@@ -187,6 +286,9 @@ const App = () => {
     };
 
     const toggleMultiplier = (level: number) => {
+        // Can't use multipliers with deductions
+        if (selectedDeduction) return;
+
         if (multiplierLevel === level) {
             setMultiplierLevel(null);
         } else {
@@ -194,8 +296,11 @@ const App = () => {
         }
     };
 
-    // Calculate preview score
     const getPreviewScore = () => {
+        if (selectedDeduction) {
+            return selectedDeduction.points;
+        }
+
         if (!selectedTrick) return 0;
 
         let preview = selectedTrick.baseScore;
@@ -219,84 +324,6 @@ const App = () => {
         return preview;
     };
 
-    // -------- EXPORT HELPERS (CSV & TXT) ----------
-    const csvEscape = (val: any) => {
-        const s = String(val ?? '');
-        if (/[",\n]/.test(s)) {
-            return `"${s.replace(/"/g, '""')}"`;
-        }
-        return s;
-    };
-
-    const downloadFile = (filename: string, content: string, mime: string) => {
-        const blob = new Blob([content], { type: mime });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        }, 0);
-    };
-
-    const buildCsv = () => {
-        const rows: (string | number)[][] = [];
-        rows.push(['Competitor', competitorName]);
-        rows.push([]);
-        rows.push(['#', 'Identifier', 'Trick', 'Difficulty', 'Base', 'Features', 'GOE', 'Multiplier Level', 'Final']);
-        scores.forEach((s, i) => {
-            rows.push([
-                i + 1,
-                s.identifier,
-                s.trick,
-                s.difficulty,
-                s.baseScore,
-                s.features.map(f => f.abbrev).join(', '),
-                s.goeLevel >= 0 ? `+${s.goeLevel}` : `${s.goeLevel}`,
-                s.multiplierLevel ?? '',
-                formatScore(s.finalScore)
-            ]);
-        });
-        rows.push([]);
-        rows.push(['Total', '', '', '', '', '', '', '', formatScore(totalScore)]);
-        return rows.map(r => r.map(csvEscape).join(',')).join('\n');
-    };
-
-    const buildTxt = () => {
-        let txt = '';
-        txt += `Competitor: ${competitorName}\n`;
-        txt += `Total: ${formatScore(totalScore)}\n\n`;
-        txt += `#  Identifier     | Trick (Diff)                | Base  | Features      | GOE | Mult | Final\n`;
-        txt += `--------------------------------------------------------------------------------------------\n`;
-        scores.forEach((s, i) => {
-            const line =
-                `${String(i + 1).padEnd(3)}` +
-                `${s.identifier.padEnd(15)}| ` +
-                `${`${s.trick} (${s.difficulty})`.padEnd(25)}| ` +
-                `${String(s.baseScore).padEnd(5)} | ` +
-                `${s.features.map(f => f.abbrev).join(', ').padEnd(13)}| ` +
-                `${(s.goeLevel >= 0 ? `+${s.goeLevel}` : s.goeLevel).toString().padEnd(3)} | ` +
-                `${(s.multiplierLevel ?? '').toString().padEnd(5)}| ` +
-                `${formatScore(s.finalScore)}`;
-            txt += line + '\n';
-        });
-        return txt;
-    };
-
-    const onExportCsv = () => {
-        const filename = `${competitorName || 'scores'}.csv`;
-        downloadFile(filename, buildCsv(), 'text/csv;charset=utf-8');
-    };
-
-    const onExportTxt = () => {
-        const filename = `${competitorName || 'scores'}.txt`;
-        downloadFile(filename, buildTxt(), 'text/plain;charset=utf-8');
-    };
-    // -----------------------------------------------
-
     return (
         <div className={`app-container ${darkMode ? 'dark-mode' : ''}`}>
             <div className="app-content">
@@ -306,7 +333,7 @@ const App = () => {
                         onClick={() => setDarkMode(!darkMode)}
                         title="Click to toggle dark mode"
                     >
-                        Diabolo Scoring
+                        Diabolo Scoring {editingCompetitor && <span className="editing-indicator">(Editing: {editingCompetitor.name})</span>}
                     </h1>
 
                     {/* Tab Navigation */}
@@ -329,231 +356,67 @@ const App = () => {
                         >
                             Export / Submit
                         </button>
+                        <button
+                            onClick={() => setActiveTab('saved')}
+                            className={`tab-button ${activeTab === 'saved' ? 'tab-active' : ''}`}
+                        >
+                            Saved Competitors ({savedCompetitors.length})
+                        </button>
                     </div>
 
-                    {activeTab === 'scoring' ? (
-                        <>
-                            {/* Competitor Info & Score */}
-                            <div className="competitor-section">
-                                <input
-                                    type="text"
-                                    value={competitorName}
-                                    onChange={(e) => setCompetitorName(e.target.value)}
-                                    className="competitor-input"
-                                    placeholder="Competitor Name"
-                                />
-                                <div className="score-display">
-                                    <div className="score-value">{formatScore(totalScore)}</div>
-                                </div>
-                            </div>
+                    {activeTab === 'scoring' && (
+                        <ScoringTab
+                            competitorName={competitorName}
+                            setCompetitorName={setCompetitorName}
+                            totalScore={totalScore}
+                            scores={scores}
+                            editingCompetitor={editingCompetitor}
+                            selectedTrick={selectedTrick}
+                            selectedDeduction={selectedDeduction}
+                            selectedFeatures={selectedFeatures}
+                            goeLevel={goeLevel}
+                            multiplierLevel={multiplierLevel}
+                            selectTrick={selectTrick}
+                            selectDeduction={selectDeduction}
+                            setGoeLevel={setGoeLevel}
+                            toggleMultiplier={toggleMultiplier}
+                            toggleFeature={toggleFeature}
+                            getPreviewScore={getPreviewScore}
+                            submitScore={submitScore}
+                            removeScore={removeScore}
+                            resetScores={resetScores}
+                            cancelEdit={cancelEdit}
+                        />
+                    )}
 
-                            {/* Submit Section */}
-                            <div className="section">
-                                <div className="section-title">
-                                    Submit Score {selectedTrick ? `- ${selectedTrick.name} (${selectedTrick.difficulty})` : ''}
-                                    {selectedTrick && ` - Preview: ${formatScore(getPreviewScore())}`}
-                                </div>
-                                <button
-                                    onClick={submitScore}
-                                    className={`submit-button ${selectedTrick ? 'submit-ready' : ''}`}
-                                    disabled={!selectedTrick}
-                                >
-                                    {selectedTrick ? `Submit Score (${formatScore(getPreviewScore())})` : 'Select a trick first'}
-                                </button>
-                            </div>
+                    {activeTab === 'details' && (
+                        <ScoreDetailsTab
+                            competitorName={competitorName}
+                            totalScore={totalScore}
+                            scores={scores}
+                            removeScore={removeScore}
+                        />
+                    )}
 
-                            {/* GOE Selector */}
-                            <div className="section">
-                                <div className="section-title">GOE - Grade of Execution (×{goeLevels[goeLevel]}):</div>
-                                <div className="button-row">
-                                    {[-3, -2, -1, 0, 1, 2, 3].map(level => (
-                                        <button
-                                            key={level}
-                                            onClick={() => setGoeLevel(level)}
-                                            className={`level-button ${goeLevel === level ? 'goe-active' : ''}`}
-                                        >
-                                            {level >= 0 ? '+' : ''}{level} ({Math.round((goeLevels[level] - 1) * 100)}%)
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                    {activeTab === 'export' && (
+                        <ExportSubmitTab
+                            competitorName={competitorName}
+                            setCompetitorName={setCompetitorName}
+                            totalScore={totalScore}
+                            scores={scores}
+                            editingCompetitor={editingCompetitor}
+                            submitFinalScore={submitFinalScore}
+                        />
+                    )}
 
-                            {/* Multiplier Level Selector */}
-                            <div className="section">
-                                <div className="section-title">
-                                    Multiplier Level {multiplierLevel ? `(×${multiplierLevels[multiplierLevel]})` : '(×1)'}:
-                                </div>
-                                <div className="button-row">
-                                    {[1, 2, 3, 4, 5].map(level => (
-                                        <button
-                                            key={level}
-                                            onClick={() => toggleMultiplier(level)}
-                                            className={`level-button ${multiplierLevel === level ? 'level-active' : ''}`}
-                                        >
-                                            {level} (×{multiplierLevels[level]})
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Feature Selector */}
-                            <div className="section">
-                                <div className="section-title">Features:</div>
-                                <div className="button-row">
-                                    {features.map(feature => (
-                                        <button
-                                            key={feature.name}
-                                            onClick={() => toggleFeature(feature)}
-                                            className={`feature-button ${selectedFeatures.find(f => f.name === feature.name) ? 'feature-active' : ''}`}
-                                        >
-                                            {feature.abbrev} {feature.multiplier ? `(×${feature.multiplier})` : `(+${feature.points})`}
-                                        </button>
-                                    ))}
-                                </div>
-                                {selectedFeatures.length > 0 && (
-                                    <div className="selected-features">
-                                        Selected: {selectedFeatures.map(f => f.abbrev).join(', ')}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Tricks Grid */}
-                            <div className="tricks-grid">
-                                {tricks.map((trick) => (
-                                    <div key={trick.name} className="trick-row">
-                                        <div className="trick-label">{trick.abbrev}</div>
-                                        <div className="trick-buttons">
-                                            {Object.entries(trick.scores).map(([difficulty, score]) => {
-                                                if (score === 0) return <div key={difficulty}></div>;
-
-                                                const isSelected = selectedTrick?.name === trick.name && selectedTrick?.difficulty === difficulty;
-
-                                                return (
-                                                    <button
-                                                        key={difficulty}
-                                                        onClick={() => selectTrick(trick.name, difficulty, score)}
-                                                        className={`trick-button ${getDifficultyColor(difficulty)} ${isSelected ? 'trick-selected' : ''}`}
-                                                    >
-                                                        <div className="difficulty-label">{difficulty}</div>
-                                                        <div className="score-label">{formatScore(score)}</div>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Recent Scores */}
-                            {scores.length > 0 && (
-                                <div className="section">
-                                    <div className="section-title">Recent Scores:</div>
-                                    <div className="recent-scores">
-                                        {scores.slice(-10).map((score) => (
-                                            <button
-                                                key={score.id}
-                                                onClick={() => removeScore(score.id)}
-                                                className="remove-button"
-                                                title={`Remove: ${formatScore(score.finalScore)} pts`}
-                                            >
-                                                -{score.description} ({formatScore(score.finalScore)})
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Reset */}
-                            <div className="reset-section">
-                                <button onClick={resetScores} className="reset-button">
-                                    Reset
-                                </button>
-                            </div>
-                        </>
-                    ) : activeTab === 'details' ? (
-                        <>
-                            {/* Score Details Tab */}
-                            <div className="details-header">
-                                <h2 className="details-title">Detailed Score Breakdown</h2>
-                                <div className="details-total">Total: {formatScore(totalScore)}</div>
-                            </div>
-
-                            {competitorName && (
-                                <div className="competitor-name">Competitor: {competitorName}</div>
-                            )}
-
-                            <div className="details-list">
-                                {scores.map((score, index) => (
-                                    <div key={score.id} className="detail-item">
-                                        <div>
-                                            <div className="detail-identifier">
-                                                {index + 1}. {score.identifier}
-                                            </div>
-                                            <div className="detail-breakdown">
-                                                {score.trick} ({score.difficulty}) - Base: {formatScore(score.baseScore)}
-                                                {score.features.length > 0 && ` + Features: ${score.features.map((f: any) => f.abbrev).join(', ')}`}
-                                                {score.goeLevel !== 0 && ` × GOE: ${goeLevels[score.goeLevel]}`}
-                                                {score.multiplierLevel && ` × Multiplier Level ${score.multiplierLevel}`}
-                                            </div>
-                                        </div>
-                                        <div className="detail-score">
-                                            <div className="detail-points">{formatScore(score.finalScore)}</div>
-                                            <button
-                                                onClick={() => removeScore(score.id)}
-                                                className="detail-remove"
-                                            >
-                                                Remove
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                                {scores.length === 0 && (
-                                    <div className="no-scores">
-                                        No scores recorded yet. Switch to the Scoring tab to add tricks.
-                                    </div>
-                                )}
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="details-header">
-                                <h2 className="details-title">Export / Submit</h2>
-                                <div className="details-total">Total: {formatScore(totalScore)}</div>
-                            </div>
-
-                            <div className="section">
-                                <div className="section-title">Competitor name (required to export):</div>
-                                <input
-                                    type="text"
-                                    value={competitorName}
-                                    onChange={(e) => setCompetitorName(e.target.value)}
-                                    className="competitor-input"
-                                    placeholder="Competitor Name"
-                                />
-                            </div>
-
-                            <div className="section">
-                                <div className="section-title">Export format:</div>
-                                <div className="button-row">
-                                    <button
-                                        className="level-button"
-                                        onClick={onExportCsv}
-                                        disabled={!competitorName.trim() || scores.length === 0}
-                                        title={!competitorName.trim() ? 'Enter competitor name to enable export' : (scores.length === 0 ? 'No scores to export' : 'Export CSV')}
-                                    >
-                                        Export CSV (Excel)
-                                    </button>
-                                    <button
-                                        className="level-button"
-                                        onClick={onExportTxt}
-                                        disabled={!competitorName.trim() || scores.length === 0}
-                                        title={!competitorName.trim() ? 'Enter competitor name to enable export' : (scores.length === 0 ? 'No scores to export' : 'Export TXT')}
-                                    >
-                                        Export TXT
-                                    </button>
-                                </div>
-                            </div>
-                        </>
+                    {activeTab === 'saved' && (
+                        <SavedCompetitorsTab
+                            savedCompetitors={savedCompetitors}
+                            selectedCompetitorDetails={selectedCompetitorDetails}
+                            setSelectedCompetitorDetails={setSelectedCompetitorDetails}
+                            loadCompetitorForEditing={loadCompetitorForEditing}
+                            deleteCompetitor={deleteCompetitor}
+                        />
                     )}
                 </div>
             </div>
