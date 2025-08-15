@@ -1,5 +1,5 @@
 import React from 'react';
-import { Feature, Score, SavedCompetitor } from './types';
+import { Feature, Score, SavedCompetitor, JudgeCategory } from './types';
 import { tricks, features, majorDeductions, multiplierLevels, goeLevels } from './constants';
 import { formatScore, getDifficultyColor } from './utils';
 
@@ -8,6 +8,8 @@ interface ScoringTabProps {
     setCompetitorName: (name: string) => void;
     judgeName: string;
     setJudgeName: (name: string) => void;
+    judgeCategory: JudgeCategory;
+    setJudgeCategory: (category: JudgeCategory) => void;
     totalScore: number;
     scores: Score[];
     editingCompetitor: SavedCompetitor | null;
@@ -18,6 +20,8 @@ interface ScoringTabProps {
     multiplierLevel: number | null;
     showPoints: boolean;
     isAdmin: boolean;
+    isDisqualified: boolean;
+    setIsDisqualified: (dq: boolean) => void;
     selectTrick: (trickName: string, difficulty: string, baseScore: number) => void;
     selectDeduction: (deduction: {name: string, points: number, abbrev: string}) => void;
     setGoeLevel: (level: number) => void;
@@ -36,6 +40,8 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                                                    setCompetitorName,
                                                    judgeName,
                                                    setJudgeName,
+                                                   judgeCategory,
+                                                   setJudgeCategory,
                                                    totalScore,
                                                    scores,
                                                    editingCompetitor,
@@ -46,6 +52,8 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                                                    multiplierLevel,
                                                    showPoints,
                                                    isAdmin,
+                                                   isDisqualified,
+                                                   setIsDisqualified,
                                                    selectTrick,
                                                    selectDeduction,
                                                    setGoeLevel,
@@ -57,8 +65,14 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                                                    resetScores,
                                                    cancelEdit,
                                                    submitFinalScore
-                                               }) => {
-    const canSaveCompetitor = competitorName.trim() && scores.length > 0;
+                                               }) => {const canSaveCompetitor = competitorName.trim() && judgeName.trim() && (scores.length > 0 || isDisqualified);
+
+    const handleSubmitFinalScore = () => {
+        setJudgeCategory('technical');
+        submitFinalScore();
+    };
+
+    const displayScore = isDisqualified ? 'DQ' : (showPoints ? formatScore(totalScore) : '***');
 
     return (
         <>
@@ -71,24 +85,42 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                     className="competitor-input"
                     placeholder="Competitor Name"
                 />
-                <div className="score-display">
-                    <div className="score-value">{showPoints ? formatScore(totalScore) : '***'}</div>
+                <div className={`score-display ${isDisqualified ? 'score-disqualified' : ''}`}>
+                    <div className="score-value" style={isDisqualified ? {color: '#dc2626'} : {}}>
+                        {displayScore}
+                    </div>
                 </div>
             </div>
 
-            {/* Judge Name Section - show for admin or if editing */}
-            {(isAdmin || editingCompetitor) && (
-                <div className="section">
-                    <input
-                        type="text"
-                        value={judgeName}
-                        onChange={(e) => setJudgeName(e.target.value)}
-                        className="competitor-input"
-                        placeholder={isAdmin ? "Judge Name (Required for Admin)" : "Judge Name"}
-                        style={{ marginBottom: '8px' }}
-                    />
+            {/* Judge Info Section */}
+            <div className="section">
+                <input
+                    type="text"
+                    value={judgeName}
+                    onChange={(e) => setJudgeName(e.target.value)}
+                    className="competitor-input judge-input"
+                    placeholder="Judge Name"
+                />
+            </div>
+
+            {/* DQ Toggle */}
+            <div className="section">
+                <div className="section-title">Competitor Status:</div>
+                <div className="button-row">
+                    <button
+                        onClick={() => setIsDisqualified(!isDisqualified)}
+                        className={`level-button ${isDisqualified ? 'level-active' : ''}`}
+                        style={isDisqualified ? {backgroundColor: '#dc2626', color: 'white'} : {}}
+                    >
+                        {isDisqualified ? 'DISQUALIFIED (Click to Restore)' : 'Disqualify Competitor'}
+                    </button>
                 </div>
-            )}
+                {isDisqualified && (
+                    <div className="selected-features" style={{color: '#dc2626'}}>
+                        ⚠️ This competitor is disqualified and will receive 0 points regardless of scores entered.
+                    </div>
+                )}
+            </div>
 
             {/* Show cancel edit button if editing */}
             {editingCompetitor && (
@@ -99,25 +131,25 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                 </div>
             )}
 
-            {/* Save Competitor Button for non-admin users */}
-            {!isAdmin && (
-                <div className="section">
-                    <button
-                        className="submit-final-button"
-                        onClick={submitFinalScore}
-                        disabled={!canSaveCompetitor}
-                        title={
-                            !competitorName.trim() ? 'Enter competitor name to save' :
-                                (scores.length === 0 ? 'No scores to save' : 'Save competitor')
-                        }
-                    >
-                        {editingCompetitor ? 'Update Competitor' : 'Save Competitor'}
-                    </button>
-                </div>
-            )}
+            {/* Save Competitor Button */}
+            <div className="section">
+                <button
+                    className="submit-final-button"
+                    onClick={handleSubmitFinalScore}
+                    disabled={!canSaveCompetitor}
+                    title={
+                        !competitorName.trim() ? 'Enter competitor name to save' :
+                            !judgeName.trim() ? 'Enter judge name to save' :
+                                (scores.length === 0 && !isDisqualified ? 'No technical scores to save or DQ competitor' : 'Save competitor with technical scores')
+                    }
+                >
+                    {editingCompetitor ? 'Update Technical Competitor' : 'Save Technical Competitor'}
+                    {isDisqualified && ' (DISQUALIFIED)'}
+                </button>
+            </div>
 
-            {/* Tricks Grid and Major Deductions */}
-            <div className="tricks-and-deductions">
+            {/* Tricks Grid and Major Deductions - Disabled if DQ */}
+            <div className={`tricks-and-deductions ${isDisqualified ? 'disabled' : ''}`}>
                 <div className="tricks-grid">
                     {tricks.map((trick) => (
                         <div key={trick.name} className="trick-row">
@@ -131,8 +163,9 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                                     return (
                                         <button
                                             key={difficulty}
-                                            onClick={() => selectTrick(trick.name, difficulty, score)}
-                                            className={`trick-button ${getDifficultyColor(difficulty)} ${isSelected ? 'trick-selected' : ''}`}
+                                            onClick={() => !isDisqualified && selectTrick(trick.name, difficulty, score)}
+                                            className={`trick-button ${getDifficultyColor(difficulty)} ${isSelected ? 'trick-selected' : ''} ${isDisqualified ? 'disabled' : ''}`}
+                                            disabled={isDisqualified}
                                         >
                                             <div className="difficulty-label">{difficulty}</div>
                                             {showPoints && <div className="score-label">{formatScore(score)}</div>}
@@ -151,8 +184,9 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                         return (
                             <button
                                 key={deduction.name}
-                                onClick={() => selectDeduction(deduction)}
-                                className={`deduction-button-selectable ${isSelected ? 'deduction-selected' : ''}`}
+                                onClick={() => !isDisqualified && selectDeduction(deduction)}
+                                className={`deduction-button-selectable ${isSelected ? 'deduction-selected' : ''} ${isDisqualified ? 'disabled' : ''}`}
+                                disabled={isDisqualified}
                             >
                                 <div className="deduction-name">{deduction.name}</div>
                                 {showPoints && <div className="deduction-value">{deduction.points}</div>}
@@ -160,7 +194,6 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                             </button>
                         );
                     })}
-                    {/* Display selected deductions */}
                     {selectedDeductions.length > 0 && (
                         <div className="selected-features" style={{ marginTop: '8px' }}>
                             Selected: {selectedDeductions.map(d => d.abbrev).join(', ')}
@@ -170,51 +203,40 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                 </div>
             </div>
 
-            {/* GOE Selector */}
-            <div className="section">
+            {/* Level Selector FIRST - Disabled if DQ */}
+            <div className={`section ${isDisqualified ? 'disabled' : ''}`}>
                 <div className="section-title">
-                    GOE - Grade of Execution {showPoints && `(×${goeLevels[goeLevel]})`}:
-                </div>
-                <div className="button-row">
-                    {[-3, -2, -1, 0, 1, 2, 3].map(level => (
-                        <button
-                            key={level}
-                            onClick={() => setGoeLevel(level)}
-                            className={`level-button ${goeLevel === level ? 'goe-active' : ''}`}
-                        >
-                            {level >= 0 ? '+' : ''}{level}{showPoints && ` (${Math.round((goeLevels[level] - 1) * 100)}%)`}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Multiplier Level Selector */}
-            <div className="section">
-                <div className="section-title">
-                    Multiplier Level {showPoints && (multiplierLevel ? `(×${multiplierLevels[multiplierLevel]})` : '(×1)')}:
+                    Level {showPoints && (multiplierLevel ? `(×${multiplierLevels[multiplierLevel]})` : '(×1)')}:
                 </div>
                 <div className="button-row">
                     {[1, 2, 3, 4, 5].map(level => (
                         <button
                             key={level}
-                            onClick={() => toggleMultiplier(level)}
-                            className={`level-button ${multiplierLevel === level ? 'level-active' : ''}`}
+                            onClick={() => !isDisqualified && toggleMultiplier(level)}
+                            className={`level-button ${multiplierLevel === level ? 'level-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
+                            disabled={isDisqualified}
                         >
-                            {level}{showPoints && ` (×${multiplierLevels[level]})`}
+                            L{level}{showPoints && ` (×${multiplierLevels[level]})`}
                         </button>
                     ))}
                 </div>
+                {multiplierLevel && (
+                    <div className="selected-features">
+                        Selected Level: L{multiplierLevel} {showPoints && `(×${multiplierLevels[multiplierLevel]})`}
+                    </div>
+                )}
             </div>
 
-            {/* Feature Selector */}
-            <div className="section">
+            {/* Feature Selector SECOND - Disabled if DQ */}
+            <div className={`section ${isDisqualified ? 'disabled' : ''}`}>
                 <div className="section-title">Features:</div>
                 <div className="button-row">
                     {features.map(feature => (
                         <button
                             key={feature.name}
-                            onClick={() => toggleFeature(feature)}
-                            className={`feature-button ${selectedFeatures.find(f => f.name === feature.name) ? 'feature-active' : ''}`}
+                            onClick={() => !isDisqualified && toggleFeature(feature)}
+                            className={`feature-button ${selectedFeatures.find(f => f.name === feature.name) ? 'feature-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
+                            disabled={isDisqualified}
                         >
                             {feature.abbrev}{showPoints && (feature.multiplier ? ` (×${feature.multiplier})` : ` (+${feature.points})`)}
                         </button>
@@ -227,29 +249,55 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                 )}
             </div>
 
-            {/* Submit Section */}
-            <div className="section">
+            {/* Execution Selector THIRD - Disabled if DQ */}
+            <div className={`section ${isDisqualified ? 'disabled' : ''}`}>
                 <div className="section-title">
-                    Submit Score {selectedTrick && `- ${selectedTrick.name} (${selectedTrick.difficulty})`}
-                    {selectedDeductions.length > 0 && `- ${selectedDeductions.map(d => d.abbrev).join(', ')}`}
-                    {showPoints && (selectedTrick || selectedDeductions.length > 0) && ` - Preview: ${formatScore(getPreviewScore())}`}
+                    Execution - Grade of Execution {showPoints && `(×${goeLevels[goeLevel]})`}:
                 </div>
-                <button
-                    onClick={submitScore}
-                    className={`submit-button ${(selectedTrick || selectedDeductions.length > 0) ? 'submit-ready' : ''}`}
-                    disabled={!selectedTrick && selectedDeductions.length === 0}
-                >
-                    {(selectedTrick || selectedDeductions.length > 0) ?
-                        (showPoints ? `Submit Score (${formatScore(getPreviewScore())})` : 'Submit Score') :
-                        'Select a trick or deduction first'
-                    }
-                </button>
+                <div className="button-row">
+                    {[-3, -2, -1, 0, 1, 2, 3].map(level => (
+                        <button
+                            key={level}
+                            onClick={() => !isDisqualified && setGoeLevel(level)}
+                            className={`level-button ${goeLevel === level ? 'goe-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
+                            disabled={isDisqualified}
+                        >
+                            E{level >= 0 ? '+' : ''}{level}{showPoints && ` (${Math.round((goeLevels[level] - 1) * 100)}%)`}
+                        </button>
+                    ))}
+                </div>
+                {goeLevel !== 0 && (
+                    <div className="selected-features">
+                        Selected Execution: E{goeLevel >= 0 ? '+' : ''}{goeLevel} {showPoints && `(×${goeLevels[goeLevel]})`}
+                    </div>
+                )}
             </div>
 
-            {/* Recent Scores */}
-            {scores.length > 0 && (
+            {/* Submit Section - Disabled if DQ */}
+            {!isDisqualified && (
                 <div className="section">
-                    <div className="section-title">Recent Scores:</div>
+                    <div className="section-title">
+                        Submit Score {selectedTrick && `- ${selectedTrick.name} (${selectedTrick.difficulty})`}
+                        {selectedDeductions.length > 0 && `- ${selectedDeductions.map(d => d.abbrev).join(', ')}`}
+                        {showPoints && (selectedTrick || selectedDeductions.length > 0) && ` - Preview: ${formatScore(getPreviewScore())}`}
+                    </div>
+                    <button
+                        onClick={submitScore}
+                        className={`submit-button ${(selectedTrick || selectedDeductions.length > 0) ? 'submit-ready' : ''}`}
+                        disabled={!selectedTrick && selectedDeductions.length === 0}
+                    >
+                        {(selectedTrick || selectedDeductions.length > 0) ?
+                            (showPoints ? `Submit Score (${formatScore(getPreviewScore())})` : 'Submit Score') :
+                            'Select a trick or deduction first'
+                        }
+                    </button>
+                </div>
+            )}
+
+            {/* Recent Scores */}
+            {scores.length > 0 && !isDisqualified && (
+                <div className="section">
+                    <div className="section-title">Recent Scores</div>
                     <div className="recent-scores">
                         {scores.slice(-10).map((score) => (
                             <button
@@ -258,19 +306,24 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                                 className="remove-button"
                                 title={`Remove: ${showPoints ? formatScore(score.finalScore) + ' pts' : 'score'}`}
                             >
-                                -{score.description}{showPoints && ` (${formatScore(score.finalScore)})`}
+                                -{score.identifier}{showPoints && ` (${formatScore(score.finalScore)})`}
                             </button>
                         ))}
+                    </div>
+                    <div className="selected-features" style={{ marginTop: '8px', fontSize: '12px' }}>
+                        Order: Trick → Level (L) → Features → Execution (E) → Deductions
                     </div>
                 </div>
             )}
 
             {/* Reset */}
             <div className="reset-section">
-                <button onClick={resetScores} className="reset-button">
-                    Reset
+                <button onClick={resetScores} className="reset-button" disabled={isDisqualified}>
+                    Reset Technical Scores
                 </button>
             </div>
+
+
         </>
     );
 };

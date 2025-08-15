@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface LoginProps {
-    onLogin: () => void;
+    onLogin: (username: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -16,7 +16,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         const validPassword = process.env.REACT_APP_LOGIN_PASSWORD;
 
         if (username.toLowerCase() === validUsername && password === validPassword) {
-            onLogin();
+            onLogin(username); // Pass the actual username entered by the user
         } else {
             setError('Invalid username or password');
             setUsername('');

@@ -1,4 +1,4 @@
-import { Feature } from './types';
+import { Feature, PerformanceCategory } from './types';
 
 export const tricks = [
     { name: 'Shuffle', abbrev: '#', scores: { '1D': 0, '2D': 0.7, '3D': 6, '4D': 15, 'VD': 0 } },
@@ -22,6 +22,39 @@ export const majorDeductions = [
     { name: 'Tangle', abbrev: 'Tang', points: -0.5, type: 'deduction' },
     { name: 'Time Violation', abbrev: 'Time', points: -2, type: 'deduction' },
     { name: 'Other Rule Violations', abbrev: 'Other', points: -2, type: 'deduction' }
+];
+
+export const performanceCategories: PerformanceCategory[] = [
+    {
+        name: 'Control',
+        key: 'control',
+        description: 'Technical mastery and precision in execution'
+    },
+    {
+        name: 'Style',
+        key: 'style',
+        description: 'Individual flair and artistic expression'
+    },
+    {
+        name: 'Space Usage',
+        key: 'spaceUsage',
+        description: 'Effective use of performance area and movement'
+    },
+    {
+        name: 'Choreography',
+        key: 'choreography',
+        description: 'Flow, transitions, and routine composition'
+    },
+    {
+        name: 'Construction',
+        key: 'construction',
+        description: 'Overall routine structure and progression'
+    },
+    {
+        name: 'Showmanship',
+        key: 'showmanship',
+        description: 'Stage presence and audience engagement'
+    }
 ];
 
 export const multiplierLevels: Record<number, number> = {

@@ -20,6 +20,19 @@ export const formatDate = (dateString: string) => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+// Calculate adjusted technical score based on highest technical score
+export const calculateAdjustedScore = (competitorScore: number, highestScore: number): number => {
+    if (highestScore === 0) return 0;
+    return (competitorScore / highestScore) * 70;
+};
+
+// Get highest technical score from all competitors
+export const getHighestTechnicalScore = (competitors: any[]): number => {
+    const technicalCompetitors = competitors.filter(comp => comp.judgeCategory === 'technical');
+    if (technicalCompetitors.length === 0) return 0;
+    return Math.max(...technicalCompetitors.map(comp => comp.totalScore));
+};
+
 // Export helpers
 export const csvEscape = (val: any) => {
     const s = String(val ?? '');
