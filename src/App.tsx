@@ -8,28 +8,37 @@ import ScoringTab from './ScoringTab';
 import ScoreDetailsTab from './ScoreDetailsTab';
 import ExportSubmitTab from './ExportSubmitTab';
 import SavedCompetitorsTab from './SavedCompetitorsTab';
+import AdminTab from './AdminTab';
 
 const App: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false); // New admin state
     const [scores, setScores] = useState<Score[]>([]);
     const [totalScore, setTotalScore] = useState(0);
     const [competitorName, setCompetitorName] = useState('');
+    const [judgeName, setJudgeName] = useState('');
     const [multiplierLevel, setMultiplierLevel] = useState<number | null>(null);
     const [selectedFeatures, setSelectedFeatures] = useState<Feature[]>([]);
     const [goeLevel, setGoeLevel] = useState(0);
-    const [activeTab, setActiveTab] = useState<'scoring' | 'details' | 'export' | 'saved'>('scoring');
+    const [activeTab, setActiveTab] = useState<'scoring' | 'details' | 'export' | 'saved' | 'admin'>('scoring');
     const [darkMode, setDarkMode] = useState(false);
     const [savedCompetitors, setSavedCompetitors] = useState<SavedCompetitor[]>([]);
     const [selectedCompetitorDetails, setSelectedCompetitorDetails] = useState<SavedCompetitor | null>(null);
     const [editingCompetitor, setEditingCompetitor] = useState<SavedCompetitor | null>(null);
+    const [showPoints, setShowPoints] = useState(false);
 
     // New state for selected trick and deductions
     const [selectedTrick, setSelectedTrick] = useState<{name: string, difficulty: string, baseScore: number} | null>(null);
-    const [selectedDeduction, setSelectedDeduction] = useState<{name: string, points: number, abbrev: string} | null>(null);
+    const [selectedDeductions, setSelectedDeductions] = useState<{name: string, points: number, abbrev: string}[]>([]);
 
     // Handle login
     const handleLogin = () => {
         setIsAuthenticated(true);
+    };
+
+    // Handle admin authentication from AdminTab
+    const handleAdminAuth = (authenticated: boolean) => {
+        setIsAdmin(authenticated);
     };
 
     // Load saved competitors from localStorage on mount
@@ -63,13 +72,13 @@ const App: React.FC = () => {
     }
 
     const submitScore = () => {
-        if (!selectedTrick && !selectedDeduction) {
+        if (!selectedTrick && selectedDeductions.length === 0) {
             alert('Please select a trick or deduction first');
             return;
         }
 
         if (selectedTrick) {
-            // Handle regular trick scoring
+            // Handle regular trick scoring with optional deductions
             let finalScore = selectedTrick.baseScore;
             let description = `${tricks.find(t => t.name === selectedTrick.name)?.abbrev}(${selectedTrick.difficulty})`;
             let identifier = tricks.find(t => t.name === selectedTrick.name)?.abbrev || '';
@@ -81,7 +90,7 @@ const App: React.FC = () => {
                     description += `+${feature.abbrev}`;
                 } else if (feature.multiplier) {
                     finalScore *= feature.multiplier;
-                    description += `*${feature.abbrev}`;
+                    description += `Ã—${feature.abbrev}`;
                 }
             });
 
@@ -89,14 +98,23 @@ const App: React.FC = () => {
             finalScore *= goeMultiplier;
             if (goeLevel !== 0) {
                 identifier += `G${goeLevel >= 0 ? '+' : ''}${goeLevel}`;
-                description += `*G${goeLevel >= 0 ? '+' : ''}${goeLevel}`;
+                description += `Ã—G${goeLevel >= 0 ? '+' : ''}${goeLevel}`;
             }
 
             const multiplier = multiplierLevel ? multiplierLevels[multiplierLevel] : 1;
             if (multiplierLevel) {
                 identifier += `M${multiplierLevel}`;
                 finalScore *= multiplier;
-                description += `×${multiplier}`;
+                description += `Ã—${multiplier}`;
+            }
+
+            // Add deductions to the trick
+            if (selectedDeductions.length > 0) {
+                selectedDeductions.forEach(deduction => {
+                    finalScore += deduction.points; // deductions are negative
+                    identifier += deduction.abbrev;
+                    description += `+${deduction.abbrev}`;
+                });
             }
 
             const newScore: Score = {
@@ -109,42 +127,61 @@ const App: React.FC = () => {
                 multiplierLevel,
                 finalScore,
                 description,
-                identifier
+                identifier,
+                deductions: [...selectedDeductions]
             };
 
             setScores([...scores, newScore]);
             setTotalScore(totalScore + finalScore);
 
-        } else if (selectedDeduction) {
-            // Handle deduction scoring
+        } else if (selectedDeductions.length > 0) {
+            // Handle deduction-only scoring (when no trick is selected)
+            let finalScore = 0;
+            let description = '';
+            let identifier = '';
+
+            selectedDeductions.forEach((deduction, index) => {
+                finalScore += deduction.points;
+                if (index > 0) {
+                    identifier += '+';
+                    description += '+';
+                }
+                identifier += deduction.abbrev;
+                description += `${deduction.abbrev} (${deduction.points})`;
+            });
+
             const newScore: Score = {
                 id: Date.now(),
-                trick: selectedDeduction.name,
+                trick: selectedDeductions.length === 1 ? selectedDeductions[0].name : 'Multiple Deductions',
                 difficulty: 'DEDUCTION',
-                baseScore: selectedDeduction.points,
+                baseScore: finalScore,
                 features: [],
                 goeLevel: 0,
                 multiplierLevel: null,
-                finalScore: selectedDeduction.points,
-                description: `${selectedDeduction.abbrev} (${selectedDeduction.points})`,
-                identifier: selectedDeduction.abbrev
+                finalScore,
+                description,
+                identifier,
+                deductions: [...selectedDeductions]
             };
 
             setScores([...scores, newScore]);
-            setTotalScore(totalScore + selectedDeduction.points);
+            setTotalScore(totalScore + finalScore);
         }
 
         // Reset selections
         setSelectedTrick(null);
-        setSelectedDeduction(null);
+        setSelectedDeductions([]);
         setMultiplierLevel(null);
         setSelectedFeatures([]);
         setGoeLevel(0);
     };
 
     const selectTrick = (trickName: string, difficulty: string, baseScore: number) => {
-        // Clear deduction selection
-        setSelectedDeduction(null);
+        // Check if Time Violation is selected - if so, clear it first
+        const timeViolation = selectedDeductions.find(d => d.name === 'Time Violation');
+        if (timeViolation) {
+            setSelectedDeductions(selectedDeductions.filter(d => d.name !== 'Time Violation'));
+        }
 
         // If clicking the same trick and difficulty, deselect it
         if (selectedTrick?.name === trickName && selectedTrick?.difficulty === difficulty) {
@@ -154,18 +191,27 @@ const App: React.FC = () => {
         }
     };
 
-    const selectDeduction = (deduction: {name: string, points: number, abbrev: string}) => {
-        // Clear trick selection and related features
-        setSelectedTrick(null);
-        setSelectedFeatures([]);
-        setMultiplierLevel(null);
-        setGoeLevel(0);
+    const toggleDeduction = (deduction: {name: string, points: number, abbrev: string}) => {
+        const isSelected = selectedDeductions.find(d => d.name === deduction.name);
 
-        // Toggle deduction selection
-        if (selectedDeduction?.name === deduction.name) {
-            setSelectedDeduction(null);
+        if (isSelected) {
+            // Remove deduction
+            setSelectedDeductions(selectedDeductions.filter(d => d.name !== deduction.name));
         } else {
-            setSelectedDeduction(deduction);
+            // Special handling for Time Violation - it cannot be combined with tricks
+            if (deduction.name === 'Time Violation') {
+                if (selectedTrick) {
+                    // Clear the selected trick if Time Violation is selected
+                    setSelectedTrick(null);
+                    // Also clear features, GOE, and multipliers since there's no trick
+                    setSelectedFeatures([]);
+                    setGoeLevel(0);
+                    setMultiplierLevel(null);
+                }
+            }
+
+            // Add deduction
+            setSelectedDeductions([...selectedDeductions, deduction]);
         }
     };
 
@@ -184,15 +230,36 @@ const App: React.FC = () => {
         setSelectedFeatures([]);
         setGoeLevel(0);
         setSelectedTrick(null);
-        setSelectedDeduction(null);
+        setSelectedDeductions([]);
         setEditingCompetitor(null);
     };
 
-    const loadCompetitorForEditing = (competitor: SavedCompetitor) => {
-        // Remove the competitor from saved list temporarily
-        setSavedCompetitors(prev => prev.filter(comp => comp.id !== competitor.id));
+    // Helper function to check if current data has changed from the original
+    const hasChanges = (original: SavedCompetitor) => {
+        if (competitorName.trim() !== original.name) return true;
+        if (totalScore !== original.totalScore) return true;
+        if (scores.length !== original.scores.length) return true;
 
-        // Load their data into the current scoring session
+        // Check if any scores are different
+        for (let i = 0; i < scores.length; i++) {
+            const currentScore = scores[i];
+            const originalScore = original.scores[i];
+
+            if (!originalScore) return true;
+
+            if (currentScore.trick !== originalScore.trick ||
+                currentScore.difficulty !== originalScore.difficulty ||
+                currentScore.finalScore !== originalScore.finalScore ||
+                currentScore.identifier !== originalScore.identifier) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    const loadCompetitorForEditing = (competitor: SavedCompetitor) => {
+        // Load their data into the current scoring session WITHOUT removing from saved list
         setCompetitorName(competitor.name);
         setScores(competitor.scores);
         setTotalScore(competitor.totalScore);
@@ -203,12 +270,13 @@ const App: React.FC = () => {
 
         // Clear selections
         setSelectedTrick(null);
-        setSelectedDeduction(null);
+        setSelectedDeductions([]);
         setMultiplierLevel(null);
         setSelectedFeatures([]);
         setGoeLevel(0);
     };
 
+    // Modified submitFinalScore to work for both admin and non-admin
     const submitFinalScore = () => {
         if (!competitorName.trim()) {
             alert('Please enter a competitor name');
@@ -216,13 +284,22 @@ const App: React.FC = () => {
         }
 
         if (scores.length === 0) {
-            alert('Please add some scores before submitting');
+            alert('Please add some scores before saving');
             return;
+        }
+
+        // For non-admin users, we don't require judge name
+        const finalJudgeName = judgeName.trim() || 'Unknown Judge';
+
+        if (editingCompetitor) {
+            // Remove the old version only when saving changes
+            setSavedCompetitors(prev => prev.filter(comp => comp.id !== editingCompetitor.id));
         }
 
         const newSavedCompetitor: SavedCompetitor = {
             id: editingCompetitor ? editingCompetitor.id : Date.now().toString(),
             name: competitorName.trim(),
+            judgeName: finalJudgeName,
             totalScore: totalScore,
             scores: [...scores],
             submittedAt: new Date().toISOString()
@@ -234,22 +311,34 @@ const App: React.FC = () => {
         resetScores();
         setCompetitorName('');
 
+        // Only reset judge name for non-admin users if it was empty
+        if (!isAdmin || !judgeName.trim()) {
+            setJudgeName('');
+        }
+
         // Switch to saved competitors tab
         setActiveTab('saved');
 
         if (editingCompetitor) {
-            alert('Competitor score updated successfully!');
+            alert('Competitor updated successfully!');
         } else {
-            alert('Competitor score submitted successfully!');
+            alert('Competitor saved successfully!');
         }
     };
 
     const cancelEdit = () => {
-        if (editingCompetitor && window.confirm('Are you sure you want to cancel editing? The original score will be restored.')) {
-            // Restore the original competitor
-            setSavedCompetitors(prev => [...prev, editingCompetitor]);
+        if (editingCompetitor) {
+            if (hasChanges(editingCompetitor)) {
+                if (!window.confirm('You have unsaved changes. Are you sure you want to cancel editing?')) {
+                    return;
+                }
+            }
+
+            // Reset everything without removing the competitor from saved list
+            // (since we never removed it in the first place)
             resetScores();
             setCompetitorName('');
+            if (!isAdmin) setJudgeName(''); // Only reset judge name for non-admin
             setActiveTab('saved');
         }
     };
@@ -260,13 +349,16 @@ const App: React.FC = () => {
             if (selectedCompetitorDetails?.id === competitorId) {
                 setSelectedCompetitorDetails(null);
             }
+            // If we're currently editing this competitor, clear the editing state
+            if (editingCompetitor?.id === competitorId) {
+                resetScores();
+                setCompetitorName('');
+                if (!isAdmin) setJudgeName('');
+            }
         }
     };
 
     const toggleFeature = (feature: Feature) => {
-        // Can't use features with deductions
-        if (selectedDeduction) return;
-
         if (feature.type === 'turn') {
             const otherTurns = selectedFeatures.filter(f => f.type !== 'turn');
             const isCurrentlySelected = selectedFeatures.find(f => f.name === feature.name);
@@ -286,9 +378,6 @@ const App: React.FC = () => {
     };
 
     const toggleMultiplier = (level: number) => {
-        // Can't use multipliers with deductions
-        if (selectedDeduction) return;
-
         if (multiplierLevel === level) {
             setMultiplierLevel(null);
         } else {
@@ -297,8 +386,9 @@ const App: React.FC = () => {
     };
 
     const getPreviewScore = () => {
-        if (selectedDeduction) {
-            return selectedDeduction.points;
+        if (!selectedTrick && selectedDeductions.length > 0) {
+            // Deduction-only score
+            return selectedDeductions.reduce((sum, deduction) => sum + deduction.points, 0);
         }
 
         if (!selectedTrick) return 0;
@@ -321,7 +411,21 @@ const App: React.FC = () => {
             preview *= multiplier;
         }
 
+        // Add deductions
+        selectedDeductions.forEach(deduction => {
+            preview += deduction.points;
+        });
+
         return preview;
+    };
+
+    // Handle tab switching with admin check for details and export only
+    const handleTabSwitch = (tab: 'scoring' | 'details' | 'export' | 'saved' | 'admin') => {
+        if ((tab === 'details' || tab === 'export') && !isAdmin) {
+            alert('Admin access required to view score details and export functionality');
+            return;
+        }
+        setActiveTab(tab);
     };
 
     return (
@@ -339,28 +443,36 @@ const App: React.FC = () => {
                     {/* Tab Navigation */}
                     <div className="tab-nav">
                         <button
-                            onClick={() => setActiveTab('scoring')}
+                            onClick={() => handleTabSwitch('scoring')}
                             className={`tab-button ${activeTab === 'scoring' ? 'tab-active' : ''}`}
                         >
                             Scoring
                         </button>
                         <button
-                            onClick={() => setActiveTab('details')}
-                            className={`tab-button ${activeTab === 'details' ? 'tab-active' : ''}`}
+                            onClick={() => handleTabSwitch('details')}
+                            className={`tab-button ${activeTab === 'details' ? 'tab-active' : ''} ${!isAdmin ? 'disabled' : ''}`}
+                            title={!isAdmin ? 'Admin access required' : ''}
                         >
-                            Score Details
+                            Score Details {!isAdmin && '🔒'}
                         </button>
                         <button
-                            onClick={() => setActiveTab('export')}
-                            className={`tab-button ${activeTab === 'export' ? 'tab-active' : ''}`}
+                            onClick={() => handleTabSwitch('export')}
+                            className={`tab-button ${activeTab === 'export' ? 'tab-active' : ''} ${!isAdmin ? 'disabled' : ''}`}
+                            title={!isAdmin ? 'Admin access required' : ''}
                         >
-                            Export / Submit
+                            Export / Submit {!isAdmin && '🔒'}
                         </button>
                         <button
-                            onClick={() => setActiveTab('saved')}
+                            onClick={() => handleTabSwitch('saved')}
                             className={`tab-button ${activeTab === 'saved' ? 'tab-active' : ''}`}
                         >
                             Saved Competitors ({savedCompetitors.length})
+                        </button>
+                        <button
+                            onClick={() => handleTabSwitch('admin')}
+                            className={`tab-button ${activeTab === 'admin' ? 'tab-active' : ''}`}
+                        >
+                            Admin
                         </button>
                     </div>
 
@@ -368,16 +480,20 @@ const App: React.FC = () => {
                         <ScoringTab
                             competitorName={competitorName}
                             setCompetitorName={setCompetitorName}
+                            judgeName={judgeName}
+                            setJudgeName={setJudgeName}
                             totalScore={totalScore}
                             scores={scores}
                             editingCompetitor={editingCompetitor}
                             selectedTrick={selectedTrick}
-                            selectedDeduction={selectedDeduction}
+                            selectedDeductions={selectedDeductions}
                             selectedFeatures={selectedFeatures}
                             goeLevel={goeLevel}
                             multiplierLevel={multiplierLevel}
+                            showPoints={showPoints && isAdmin} // Only show points if admin
+                            isAdmin={isAdmin} // Pass admin status
                             selectTrick={selectTrick}
-                            selectDeduction={selectDeduction}
+                            selectDeduction={toggleDeduction}
                             setGoeLevel={setGoeLevel}
                             toggleMultiplier={toggleMultiplier}
                             toggleFeature={toggleFeature}
@@ -386,10 +502,11 @@ const App: React.FC = () => {
                             removeScore={removeScore}
                             resetScores={resetScores}
                             cancelEdit={cancelEdit}
+                            submitFinalScore={submitFinalScore} // Add this for non-admin save
                         />
                     )}
 
-                    {activeTab === 'details' && (
+                    {activeTab === 'details' && isAdmin && (
                         <ScoreDetailsTab
                             competitorName={competitorName}
                             totalScore={totalScore}
@@ -398,10 +515,12 @@ const App: React.FC = () => {
                         />
                     )}
 
-                    {activeTab === 'export' && (
+                    {activeTab === 'export' && isAdmin && (
                         <ExportSubmitTab
                             competitorName={competitorName}
                             setCompetitorName={setCompetitorName}
+                            judgeName={judgeName}
+                            setJudgeName={setJudgeName}
                             totalScore={totalScore}
                             scores={scores}
                             editingCompetitor={editingCompetitor}
@@ -416,6 +535,16 @@ const App: React.FC = () => {
                             setSelectedCompetitorDetails={setSelectedCompetitorDetails}
                             loadCompetitorForEditing={loadCompetitorForEditing}
                             deleteCompetitor={deleteCompetitor}
+                            isAdmin={isAdmin} // Pass admin status
+                        />
+                    )}
+
+                    {activeTab === 'admin' && (
+                        <AdminTab
+                            showPoints={showPoints}
+                            setShowPoints={setShowPoints}
+                            isAdmin={isAdmin}
+                            onAdminAuth={handleAdminAuth}
                         />
                     )}
                 </div>

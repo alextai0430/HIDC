@@ -6,6 +6,8 @@ import { formatScore, csvEscape, downloadFile } from './utils';
 interface ExportSubmitTabProps {
     competitorName: string;
     setCompetitorName: (name: string) => void;
+    judgeName: string;
+    setJudgeName: (name: string) => void;
     totalScore: number;
     scores: Score[];
     editingCompetitor: SavedCompetitor | null;
@@ -15,6 +17,8 @@ interface ExportSubmitTabProps {
 const ExportSubmitTab: React.FC<ExportSubmitTabProps> = ({
                                                              competitorName,
                                                              setCompetitorName,
+                                                             judgeName,
+                                                             setJudgeName,
                                                              totalScore,
                                                              scores,
                                                              editingCompetitor,
@@ -23,6 +27,7 @@ const ExportSubmitTab: React.FC<ExportSubmitTabProps> = ({
     const buildCsv = () => {
         const rows: (string | number)[][] = [];
         rows.push(['Competitor', competitorName]);
+        rows.push(['Judge', judgeName]);
         rows.push([]);
         rows.push(['#', 'Identifier', 'Trick', 'Difficulty', 'Base', 'Features', 'GOE', 'Multiplier Level', 'Final']);
         scores.forEach((s, i) => {
@@ -46,6 +51,7 @@ const ExportSubmitTab: React.FC<ExportSubmitTabProps> = ({
     const buildTxt = () => {
         let txt = '';
         txt += `Competitor: ${competitorName}\n`;
+        txt += `Judge: ${judgeName}\n`;
         txt += `Total: ${formatScore(totalScore)}\n\n`;
         txt += `#  Identifier     | Trick (Diff)                | Base  | Features      | GOE | Mult | Final\n`;
         txt += `--------------------------------------------------------------------------------------------\n`;
@@ -65,14 +71,24 @@ const ExportSubmitTab: React.FC<ExportSubmitTabProps> = ({
     };
 
     const onExportCsv = () => {
+        if (!judgeName.trim()) {
+            alert('Please enter judge name before exporting');
+            return;
+        }
         const filename = `${competitorName || 'scores'}.csv`;
         downloadFile(filename, buildCsv(), 'text/csv;charset=utf-8');
     };
 
     const onExportTxt = () => {
+        if (!judgeName.trim()) {
+            alert('Please enter judge name before exporting');
+            return;
+        }
         const filename = `${competitorName || 'scores'}.txt`;
         downloadFile(filename, buildTxt(), 'text/plain;charset=utf-8');
     };
+
+    const canSubmitOrExport = competitorName.trim() && judgeName.trim() && scores.length > 0;
 
     return (
         <>
@@ -93,11 +109,26 @@ const ExportSubmitTab: React.FC<ExportSubmitTabProps> = ({
             </div>
 
             <div className="section">
+                <div className="section-title">Judge name (required):</div>
+                <input
+                    type="text"
+                    value={judgeName}
+                    onChange={(e) => setJudgeName(e.target.value)}
+                    className="competitor-input"
+                    placeholder="Judge Name"
+                />
+            </div>
+
+            <div className="section">
                 <button
                     className="submit-final-button"
                     onClick={submitFinalScore}
-                    disabled={!competitorName.trim() || scores.length === 0}
-                    title={!competitorName.trim() ? 'Enter competitor name to submit' : (scores.length === 0 ? 'No scores to submit' : 'Submit final score and save competitor')}
+                    disabled={!canSubmitOrExport}
+                    title={
+                        !competitorName.trim() ? 'Enter competitor name to submit' :
+                            !judgeName.trim() ? 'Enter judge name to submit' :
+                                (scores.length === 0 ? 'No scores to submit' : 'Submit final score and save competitor')
+                    }
                 >
                     {editingCompetitor ? 'Update Final Score & Save Changes' : 'Submit Final Score & Save Competitor'}
                 </button>
@@ -109,16 +140,24 @@ const ExportSubmitTab: React.FC<ExportSubmitTabProps> = ({
                     <button
                         className="level-button"
                         onClick={onExportCsv}
-                        disabled={!competitorName.trim() || scores.length === 0}
-                        title={!competitorName.trim() ? 'Enter competitor name to enable export' : (scores.length === 0 ? 'No scores to export' : 'Export CSV')}
+                        disabled={!canSubmitOrExport}
+                        title={
+                            !competitorName.trim() ? 'Enter competitor name to enable export' :
+                                !judgeName.trim() ? 'Enter judge name to enable export' :
+                                    (scores.length === 0 ? 'No scores to export' : 'Export CSV')
+                        }
                     >
                         Export CSV (Excel)
                     </button>
                     <button
                         className="level-button"
                         onClick={onExportTxt}
-                        disabled={!competitorName.trim() || scores.length === 0}
-                        title={!competitorName.trim() ? 'Enter competitor name to enable export' : (scores.length === 0 ? 'No scores to export' : 'Export TXT')}
+                        disabled={!canSubmitOrExport}
+                        title={
+                            !competitorName.trim() ? 'Enter competitor name to enable export' :
+                                !judgeName.trim() ? 'Enter judge name to enable export' :
+                                    (scores.length === 0 ? 'No scores to export' : 'Export TXT')
+                        }
                     >
                         Export TXT
                     </button>

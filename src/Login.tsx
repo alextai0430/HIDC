@@ -12,10 +12,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // Get credentials from environment variables
-        const validUsername = process.env.REACT_APP_LOGIN_USERNAME || 'judge';
-        const validPassword = process.env.REACT_APP_LOGIN_PASSWORD || 'dia';
+        const validUsername = process.env.REACT_APP_LOGIN_USERNAME;
+        const validPassword = process.env.REACT_APP_LOGIN_PASSWORD;
 
-        if (username.toLowerCase() === validUsername.toLowerCase() && password === validPassword) {
+        if (username.toLowerCase() === validUsername && password === validPassword) {
             onLogin();
         } else {
             setError('Invalid username or password');

@@ -6,6 +6,12 @@ export interface Feature {
     type: string;
 }
 
+export interface Deduction {
+    name: string;
+    abbrev: string;
+    points: number;
+}
+
 export interface Score {
     id: number;
     trick: string;
@@ -17,11 +23,13 @@ export interface Score {
     finalScore: number;
     description: string;
     identifier: string;
+    deductions?: Deduction[];
 }
 
 export interface SavedCompetitor {
     id: string;
     name: string;
+    judgeName: string;
     totalScore: number;
     scores: Score[];
     submittedAt: string;
