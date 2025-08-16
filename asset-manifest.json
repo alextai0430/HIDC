@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/HIDC/static/css/main.eaf87677.css",
-    "main.js": "/HIDC/static/js/main.8032f78a.js",
+    "main.js": "/HIDC/static/js/main.58167961.js",
     "index.html": "/HIDC/index.html",
     "main.eaf87677.css.map": "/HIDC/static/css/main.eaf87677.css.map",
-    "main.8032f78a.js.map": "/HIDC/static/js/main.8032f78a.js.map"
+    "main.58167961.js.map": "/HIDC/static/js/main.58167961.js.map"
   },
   "entrypoints": [
     "static/css/main.eaf87677.css",
-    "static/js/main.8032f78a.js"
+    "static/js/main.58167961.js"
   ]
 }
