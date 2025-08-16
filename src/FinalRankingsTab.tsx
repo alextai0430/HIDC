@@ -8,8 +8,8 @@ interface FinalRankingsTabProps {
 
 interface CompetitorScores {
     name: string;
-    technicalScores: [number, number, number]; // 3 technical judges
-    performanceScores: [number, number]; // 2 performance judges
+    technicalScores: [number, number, number];
+    performanceScores: [number, number];
     normalizedTechnical: number;
     averagePerformance: number;
     finalScore: number;
@@ -26,6 +26,8 @@ interface JudgeAssignment {
     isDisqualified: boolean;
 }
 
+const STORAGE_KEY = 'diabolo-final-rankings-assignments';
+
 const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) => {
     const [judgeAssignments, setJudgeAssignments] = useState<JudgeAssignment[]>([]);
     const [finalRankings, setFinalRankings] = useState<CompetitorScores[]>([]);
@@ -33,28 +35,37 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
     const [viewMode, setViewMode] = useState<'final' | 'technical' | 'performance' | 'tech1' | 'tech2' | 'tech3' | 'perf1' | 'perf2'>('final');
     const [exportOrder, setExportOrder] = useState<'ranking' | 'input'>('ranking');
 
-    // Get unique competitor names from saved competitors
-    const uniqueCompetitorNames = Array.from(new Set(savedCompetitors.map(comp => comp.name)));
-
-    // Initialize empty judge assignments - no auto-fill
+    // Load/save assignments from localStorage
     useEffect(() => {
-        // Only initialize if empty - don't auto-fill from saved competitors
-        if (judgeAssignments.length === 0) {
-            setJudgeAssignments([]);
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                setJudgeAssignments(JSON.parse(saved));
+            } catch {
+                localStorage.removeItem(STORAGE_KEY);
+            }
         }
     }, []);
 
-    // Calculate final rankings whenever assignments change
     useEffect(() => {
-        if (judgeAssignments.length === 0) return;
+        if (judgeAssignments.length > 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(judgeAssignments));
+        }
+    }, [judgeAssignments]);
 
-        // Calculate highest technical total (sum of all 3 technical scores)
-        const highestTech = Math.max(...judgeAssignments.map(assignment =>
-            assignment.isDisqualified ? 0 : (assignment.tech1 + assignment.tech2 + assignment.tech3)
+    // Calculate rankings
+    useEffect(() => {
+        if (judgeAssignments.length === 0) {
+            setFinalRankings([]);
+            setHighestTechnicalTotal(0);
+            return;
+        }
+
+        const highestTech = Math.max(...judgeAssignments.map(a =>
+            a.isDisqualified ? 0 : (a.tech1 + a.tech2 + a.tech3)
         ));
         setHighestTechnicalTotal(highestTech);
 
-        // Calculate final scores for each competitor
         const rankings: CompetitorScores[] = judgeAssignments.map(assignment => {
             if (assignment.isDisqualified) {
                 return {
@@ -71,7 +82,6 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
             const technicalTotal = assignment.tech1 + assignment.tech2 + assignment.tech3;
             const normalizedTechnical = highestTech > 0 ? (technicalTotal / highestTech) * 70 : 0;
             const averagePerformance = (assignment.perf1 + assignment.perf2) / 2;
-            const finalScore = normalizedTechnical + averagePerformance;
 
             return {
                 name: assignment.competitorName,
@@ -79,7 +89,7 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
                 performanceScores: [assignment.perf1, assignment.perf2],
                 normalizedTechnical,
                 averagePerformance,
-                finalScore,
+                finalScore: normalizedTechnical + averagePerformance,
                 isDisqualified: false
             };
         });
@@ -89,22 +99,16 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
 
     const updateAssignment = (competitorName: string, field: keyof Omit<JudgeAssignment, 'competitorName'>, value: number | boolean) => {
         setJudgeAssignments(prev => prev.map(assignment =>
-            assignment.competitorName === competitorName
-                ? {...assignment, [field]: value}
-                : assignment
+            assignment.competitorName === competitorName ? {...assignment, [field]: value} : assignment
         ));
     };
 
     const addCompetitor = () => {
         const name = prompt('Enter competitor name:');
-        if (name && name.trim() && !judgeAssignments.find(a => a.competitorName === name.trim())) {
+        if (name?.trim() && !judgeAssignments.find(a => a.competitorName === name.trim())) {
             setJudgeAssignments(prev => [...prev, {
                 competitorName: name.trim(),
-                tech1: 0,
-                tech2: 0,
-                tech3: 0,
-                perf1: 0,
-                perf2: 0,
+                tech1: 0, tech2: 0, tech3: 0, perf1: 0, perf2: 0,
                 isDisqualified: false
             }]);
         }
@@ -117,310 +121,174 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
     };
 
     const clearAllScores = () => {
-        if (window.confirm('Clear all scores? This will reset all judge assignments to 0.')) {
-            setJudgeAssignments(prev => prev.map(assignment => ({
-                ...assignment,
-                tech1: 0,
-                tech2: 0,
-                tech3: 0,
-                perf1: 0,
-                perf2: 0,
-                isDisqualified: false
-            })));
+        if (window.confirm('Clear all scores? This will reset all judge assignments to 0 but keep the competitors.')) {
+            setJudgeAssignments(prev => prev.map(a => ({...a, tech1: 0, tech2: 0, tech3: 0, perf1: 0, perf2: 0, isDisqualified: false})));
         }
     };
 
-    const getSortedRankings = (forExport: boolean = false) => {
+    const clearAllData = () => {
+        if (window.confirm('Clear all data? This will remove all competitors and scores from final rankings permanently.')) {
+            setJudgeAssignments([]);
+            localStorage.removeItem(STORAGE_KEY);
+        }
+    };
+
+    const getSortedRankings = (forExport = false) => {
         if (finalRankings.length === 0) return [];
 
-        let sortedRankings = [...finalRankings];
-
-        // If exporting in input order, maintain the original input order
+        let sorted = [...finalRankings];
         if (forExport && exportOrder === 'input') {
-            // Keep the order as it was entered (judgeAssignments order)
-            sortedRankings = judgeAssignments.map(assignment => {
-                const competitor = finalRankings.find(fr => fr.name === assignment.competitorName);
-                return competitor!;
-            }).filter(Boolean);
-            return sortedRankings;
+            return judgeAssignments.map(a => finalRankings.find(fr => fr.name === a.competitorName)!).filter(Boolean);
         }
 
-        // Otherwise sort by the selected ranking criteria
-        switch (viewMode) {
-            case 'final':
-                sortedRankings.sort((a, b) => {
-                    if (a.isDisqualified && !b.isDisqualified) return 1;
-                    if (!a.isDisqualified && b.isDisqualified) return -1;
-                    if (a.isDisqualified && b.isDisqualified) return 0;
-                    return b.finalScore - a.finalScore;
-                });
-                break;
-            case 'technical':
-                sortedRankings.sort((a, b) => {
-                    if (a.isDisqualified && !b.isDisqualified) return 1;
-                    if (!a.isDisqualified && b.isDisqualified) return -1;
-                    if (a.isDisqualified && b.isDisqualified) return 0;
-                    const aTechTotal = a.technicalScores.reduce((sum, score) => sum + score, 0);
-                    const bTechTotal = b.technicalScores.reduce((sum, score) => sum + score, 0);
-                    const aNormalizedTech = highestTechnicalTotal > 0 ? (aTechTotal / highestTechnicalTotal) * 70 : 0;
-                    const bNormalizedTech = highestTechnicalTotal > 0 ? (bTechTotal / highestTechnicalTotal) * 70 : 0;
-                    return bNormalizedTech - aNormalizedTech;
-                });
-                break;
-            case 'performance':
-                sortedRankings.sort((a, b) => {
-                    if (a.isDisqualified && !b.isDisqualified) return 1;
-                    if (!a.isDisqualified && b.isDisqualified) return -1;
-                    if (a.isDisqualified && b.isDisqualified) return 0;
-                    return b.averagePerformance - a.averagePerformance;
-                });
-                break;
-            case 'tech1':
-                sortedRankings.sort((a, b) => {
-                    if (a.isDisqualified && !b.isDisqualified) return 1;
-                    if (!a.isDisqualified && b.isDisqualified) return -1;
-                    if (a.isDisqualified && b.isDisqualified) return 0;
-                    return b.technicalScores[0] - a.technicalScores[0];
-                });
-                break;
-            case 'tech2':
-                sortedRankings.sort((a, b) => {
-                    if (a.isDisqualified && !b.isDisqualified) return 1;
-                    if (!a.isDisqualified && b.isDisqualified) return -1;
-                    if (a.isDisqualified && b.isDisqualified) return 0;
-                    return b.technicalScores[1] - a.technicalScores[1];
-                });
-                break;
-            case 'tech3':
-                sortedRankings.sort((a, b) => {
-                    if (a.isDisqualified && !b.isDisqualified) return 1;
-                    if (!a.isDisqualified && b.isDisqualified) return -1;
-                    if (a.isDisqualified && b.isDisqualified) return 0;
-                    return b.technicalScores[2] - a.technicalScores[2];
-                });
-                break;
-            case 'perf1':
-                sortedRankings.sort((a, b) => {
-                    if (a.isDisqualified && !b.isDisqualified) return 1;
-                    if (!a.isDisqualified && b.isDisqualified) return -1;
-                    if (a.isDisqualified && b.isDisqualified) return 0;
-                    return b.performanceScores[0] - a.performanceScores[0];
-                });
-                break;
-            case 'perf2':
-                sortedRankings.sort((a, b) => {
-                    if (a.isDisqualified && !b.isDisqualified) return 1;
-                    if (!a.isDisqualified && b.isDisqualified) return -1;
-                    if (a.isDisqualified && b.isDisqualified) return 0;
-                    return b.performanceScores[1] - a.performanceScores[1];
-                });
-                break;
-        }
+        // Create sorting functions for each view mode
+        const sortFunctions = {
+            final: (a: CompetitorScores, b: CompetitorScores) => b.finalScore - a.finalScore,
+            technical: (a: CompetitorScores, b: CompetitorScores) => b.normalizedTechnical - a.normalizedTechnical,
+            performance: (a: CompetitorScores, b: CompetitorScores) => b.averagePerformance - a.averagePerformance,
+            tech1: (a: CompetitorScores, b: CompetitorScores) => b.technicalScores[0] - a.technicalScores[0],
+            tech2: (a: CompetitorScores, b: CompetitorScores) => b.technicalScores[1] - a.technicalScores[1],
+            tech3: (a: CompetitorScores, b: CompetitorScores) => b.technicalScores[2] - a.technicalScores[2],
+            perf1: (a: CompetitorScores, b: CompetitorScores) => b.performanceScores[0] - a.performanceScores[0],
+            perf2: (a: CompetitorScores, b: CompetitorScores) => b.performanceScores[1] - a.performanceScores[1]
+        };
 
-        return sortedRankings;
+        return sorted.sort((a, b) => {
+            if (a.isDisqualified && !b.isDisqualified) return 1;
+            if (!a.isDisqualified && b.isDisqualified) return -1;
+            if (a.isDisqualified && b.isDisqualified) return 0;
+            return sortFunctions[viewMode](a, b);
+        });
     };
 
     const getRankingTitle = () => {
-        const baseTitle = (() => {
-            switch (viewMode) {
-                case 'final':
-                    return 'Final Rankings';
-                case 'technical':
-                    return 'Technical Rankings (Combined)';
-                case 'performance':
-                    return 'Performance Rankings (Average)';
-                case 'tech1':
-                    return 'Technical Judge 1 Rankings';
-                case 'tech2':
-                    return 'Technical Judge 2 Rankings';
-                case 'tech3':
-                    return 'Technical Judge 3 Rankings';
-                case 'perf1':
-                    return 'Performance Judge 1 Rankings';
-                case 'perf2':
-                    return 'Performance Judge 2 Rankings';
-                default:
-                    return 'Rankings';
-            }
-        })();
-
-        const orderSuffix = exportOrder === 'input' ? ' (Input Order)' : ' (Ranked Order)';
-        return baseTitle + orderSuffix;
+        const titles = {
+            final: 'Final Rankings',
+            technical: 'Technical Rankings (Combined)',
+            performance: 'Performance Rankings (Average)',
+            tech1: 'Technical Judge 1 Rankings',
+            tech2: 'Technical Judge 2 Rankings',
+            tech3: 'Technical Judge 3 Rankings',
+            perf1: 'Performance Judge 1 Rankings',
+            perf2: 'Performance Judge 2 Rankings'
+        };
+        return titles[viewMode] + (exportOrder === 'input' ? ' (Input Order)' : ' (Ranked Order)');
     };
 
-    const getScoreDisplay = (competitor: CompetitorScores, index: number, forExport: boolean = false) => {
-        // For input order exports, don't show ranking numbers, just show scores
+    const getScoreDisplay = (competitor: CompetitorScores, index: number, forExport = false) => {
         const rank = (forExport && exportOrder === 'input') ?
             (competitor.isDisqualified ? 'DQ' : '-') :
             (competitor.isDisqualified ? 'DQ' : (index + 1).toString());
 
-        switch (viewMode) {
-            case 'final':
-                return {
-                    rank,
-                    score: competitor.isDisqualified ? 'DQ' : `${formatScore(competitor.finalScore)}/100`,
-                    breakdown: `Tech: ${formatScore(competitor.normalizedTechnical)}/70 | Perf: ${formatScore(competitor.averagePerformance)}/30`
-                };
-            case 'technical':
-                const techTotal = competitor.technicalScores.reduce((sum, score) => sum + score, 0);
-                const normalizedTechOnly = highestTechnicalTotal > 0 ? (techTotal / highestTechnicalTotal) * 70 : 0;
-                return {
-                    rank,
-                    score: competitor.isDisqualified ? 'DQ' : formatScore(normalizedTechOnly),
-                    breakdown: `(${competitor.technicalScores.map(s => formatScore(s)).join(' + ')}) / ${formatScore(highestTechnicalTotal)} × 70`
-                };
-            case 'performance':
-                return {
-                    rank,
-                    score: competitor.isDisqualified ? 'DQ' : formatScore(competitor.averagePerformance),
-                    breakdown: `${competitor.performanceScores.map(s => formatScore(s)).join(' + ')} ÷ 2`
-                };
-            case 'tech1':
-                return {
-                    rank,
-                    score: competitor.isDisqualified ? 'DQ' : formatScore(competitor.technicalScores[0]),
-                    breakdown: 'Technical Judge 1 Score'
-                };
-            case 'tech2':
-                return {
-                    rank,
-                    score: competitor.isDisqualified ? 'DQ' : formatScore(competitor.technicalScores[1]),
-                    breakdown: 'Technical Judge 2 Score'
-                };
-            case 'tech3':
-                return {
-                    rank,
-                    score: competitor.isDisqualified ? 'DQ' : formatScore(competitor.technicalScores[2]),
-                    breakdown: 'Technical Judge 3 Score'
-                };
-            case 'perf1':
-                return {
-                    rank,
-                    score: competitor.isDisqualified ? 'DQ' : formatScore(competitor.performanceScores[0]),
-                    breakdown: 'Performance Judge 1 Score'
-                };
-            case 'perf2':
-                return {
-                    rank,
-                    score: competitor.isDisqualified ? 'DQ' : formatScore(competitor.performanceScores[1]),
-                    breakdown: 'Performance Judge 2 Score'
-                };
-            default:
-                return {rank, score: '0', breakdown: ''};
-        }
+        if (competitor.isDisqualified) return { rank, score: 'DQ', breakdown: 'Disqualified' };
+
+        const displays = {
+            final: {
+                score: `${formatScore(competitor.finalScore)}/100`,
+                breakdown: `Tech: ${formatScore(competitor.normalizedTechnical)}/70 | Perf: ${formatScore(competitor.averagePerformance)}/30`
+            },
+            technical: {
+                score: formatScore(competitor.normalizedTechnical),
+                breakdown: `(${competitor.technicalScores.map(s => formatScore(s)).join(' + ')}) / ${formatScore(highestTechnicalTotal)} × 70`
+            },
+            performance: {
+                score: formatScore(competitor.averagePerformance),
+                breakdown: `${competitor.performanceScores.map(s => formatScore(s)).join(' + ')} ÷ 2`
+            },
+            tech1: { score: formatScore(competitor.technicalScores[0]), breakdown: 'Technical Judge 1 Score' },
+            tech2: { score: formatScore(competitor.technicalScores[1]), breakdown: 'Technical Judge 2 Score' },
+            tech3: { score: formatScore(competitor.technicalScores[2]), breakdown: 'Technical Judge 3 Score' },
+            perf1: { score: formatScore(competitor.performanceScores[0]), breakdown: 'Performance Judge 1 Score' },
+            perf2: { score: formatScore(competitor.performanceScores[1]), breakdown: 'Performance Judge 2 Score' }
+        };
+
+        return { rank, ...displays[viewMode] };
     };
 
     const exportCurrentRankings = (format: 'csv' | 'txt') => {
         if (finalRankings.length === 0) return;
 
-        const sortedRankings = getSortedRankings(true); // Pass true to indicate this is for export
-        const baseTitle = (() => {
-            switch (viewMode) {
-                case 'final':
-                    return 'Final Rankings';
-                case 'technical':
-                    return 'Technical Rankings (Combined)';
-                case 'performance':
-                    return 'Performance Rankings (Average)';
-                case 'tech1':
-                    return 'Technical Judge 1 Rankings';
-                case 'tech2':
-                    return 'Technical Judge 2 Rankings';
-                case 'tech3':
-                    return 'Technical Judge 3 Rankings';
-                case 'perf1':
-                    return 'Performance Judge 1 Rankings';
-                case 'perf2':
-                    return 'Performance Judge 2 Rankings';
-                default:
-                    return 'Rankings';
-            }
-        })();
-
+        const sorted = getSortedRankings(true);
+        const baseTitle = getRankingTitle().replace(' (Input Order)', '').replace(' (Ranked Order)', '');
         const orderSuffix = exportOrder === 'input' ? '_input_order' : '_ranked';
         const filename = `${baseTitle.toLowerCase().replace(/\s+/g, '_').replace(/[()]/g, '')}${orderSuffix}.${format}`;
+
         let content = '';
-
         if (format === 'csv') {
-            const rows: (string | number)[][] = [];
-            rows.push([`${baseTitle} - ${exportOrder === 'input' ? 'Input Order' : 'Ranked Order'}`]);
-            rows.push([`Generated: ${formatDate(new Date().toISOString())}`]);
+            const rows: (string | number)[][] = [
+                [`${baseTitle} - ${exportOrder === 'input' ? 'Input Order' : 'Ranked Order'}`],
+                [`Generated: ${formatDate(new Date().toISOString())}`]
+            ];
 
+            // Add formula info - Always show comprehensive formula for final rankings, tech combined, and perf average
             if (viewMode === 'final') {
-                rows.push([`Formula: ((Tech1 + Tech2 + Tech3) / ${formatScore(highestTechnicalTotal)}) × 70 + (Perf1 + Perf2) ÷ 2`]);
+                rows.push([`Scoring Formula: ((Tech1 + Tech2 + Tech3) / Highest Tech Total) × 70 + (Perf1 + Perf2) ÷ 2`]);
+                rows.push([`Technical Max: 70 points (normalized from highest total: ${formatScore(highestTechnicalTotal)})`]);
+                rows.push([`Performance Max: 30 points (average of two judges)`]);
+                rows.push([`Final Score Max: 100 points`]);
             } else if (viewMode === 'technical') {
-                rows.push([`Formula: ((Tech1 + Tech2 + Tech3) / ${formatScore(highestTechnicalTotal)}) × 70`]);
+                rows.push([`Formula: ((Tech1 + Tech2 + Tech3) / Highest Tech Total) × 70`]);
+                rows.push([`Highest Technical Total: ${formatScore(highestTechnicalTotal)}`]);
+                rows.push([`Max Technical Score: 70 points (normalized)`]);
             } else if (viewMode === 'performance') {
                 rows.push([`Formula: (Perf1 + Perf2) ÷ 2`]);
+                rows.push([`Max Performance Score: 30 points (average of two judges)`]);
             }
-
             rows.push([]);
 
-            // Headers based on view mode
-            let headers = exportOrder === 'input' ? ['Position', 'Competitor'] : ['Rank', 'Competitor'];
+            // Headers - Always comprehensive for final rankings, tech combined, and perf average
+            let headers = [exportOrder === 'input' ? 'Position' : 'Rank', 'Competitor'];
             if (viewMode === 'final') {
-                headers = [...headers, 'Tech1', 'Tech2', 'Tech3', 'Tech Total', 'Normalized Tech', 'Perf1', 'Perf2', 'Perf Avg', 'Final Score', 'Status'];
+                headers = [...headers, 'Tech Judge 1', 'Tech Judge 2', 'Tech Judge 3', 'Tech Raw Total',
+                    'Tech Normalized (×70)', 'Perf Judge 1', 'Perf Judge 2', 'Perf Average',
+                    'Final Score (/100)', 'Status'];
             } else if (viewMode === 'technical') {
-                headers = [...headers, 'Tech1', 'Tech2', 'Tech3', 'Tech Total', 'Normalized Score', 'Status'];
+                headers = [...headers, 'Tech Judge 1', 'Tech Judge 2', 'Tech Judge 3', 'Tech Raw Total',
+                    'Tech Normalized (/70)', 'Status'];
             } else if (viewMode === 'performance') {
-                headers = [...headers, 'Perf1', 'Perf2', 'Performance Average', 'Status'];
+                headers = [...headers, 'Perf Judge 1', 'Perf Judge 2', 'Performance Average (/30)', 'Status'];
             } else {
                 headers = [...headers, 'Score', 'Status'];
             }
             rows.push(headers);
 
-            sortedRankings.forEach((competitor, index) => {
-                const position = exportOrder === 'input' ?
-                    (competitor.isDisqualified ? 'DQ' : (index + 1).toString()) :
+            // Data rows
+            sorted.forEach((competitor, index) => {
+                const position = (exportOrder === 'input' && !competitor.isDisqualified) ?
+                    (index + 1).toString() :
                     (competitor.isDisqualified ? 'DQ' : (index + 1).toString());
                 const status = competitor.isDisqualified ? 'Disqualified' : 'Qualified';
-
                 let row: (string | number)[] = [position, competitor.name];
 
                 if (viewMode === 'final') {
                     const techTotal = competitor.technicalScores.reduce((sum, score) => sum + score, 0);
                     row = [...row,
-                        formatScore(competitor.technicalScores[0]),
-                        formatScore(competitor.technicalScores[1]),
-                        formatScore(competitor.technicalScores[2]),
+                        ...competitor.technicalScores.map(formatScore),
                         formatScore(techTotal),
                         formatScore(competitor.normalizedTechnical),
-                        formatScore(competitor.performanceScores[0]),
-                        formatScore(competitor.performanceScores[1]),
+                        ...competitor.performanceScores.map(formatScore),
                         formatScore(competitor.averagePerformance),
                         formatScore(competitor.finalScore),
-                        status
-                    ];
+                        status];
                 } else if (viewMode === 'technical') {
                     const techTotal = competitor.technicalScores.reduce((sum, score) => sum + score, 0);
-                    const normalizedTechOnly = highestTechnicalTotal > 0 ? (techTotal / highestTechnicalTotal) * 70 : 0;
                     row = [...row,
-                        formatScore(competitor.technicalScores[0]),
-                        formatScore(competitor.technicalScores[1]),
-                        formatScore(competitor.technicalScores[2]),
+                        ...competitor.technicalScores.map(formatScore),
                         formatScore(techTotal),
-                        formatScore(normalizedTechOnly),
-                        status
-                    ];
+                        formatScore(competitor.normalizedTechnical),
+                        status];
                 } else if (viewMode === 'performance') {
                     row = [...row,
-                        formatScore(competitor.performanceScores[0]),
-                        formatScore(competitor.performanceScores[1]),
+                        ...competitor.performanceScores.map(formatScore),
                         formatScore(competitor.averagePerformance),
-                        status
-                    ];
+                        status];
                 } else {
-                    // Individual judge scores
-                    let score = 0;
-                    if (viewMode === 'tech1') score = competitor.technicalScores[0];
-                    else if (viewMode === 'tech2') score = competitor.technicalScores[1];
-                    else if (viewMode === 'tech3') score = competitor.technicalScores[2];
-                    else if (viewMode === 'perf1') score = competitor.performanceScores[0];
-                    else if (viewMode === 'perf2') score = competitor.performanceScores[1];
-
-                    row = [...row, formatScore(score), status];
+                    const scoreMap = {
+                        tech1: competitor.technicalScores[0], tech2: competitor.technicalScores[1], tech3: competitor.technicalScores[2],
+                        perf1: competitor.performanceScores[0], perf2: competitor.performanceScores[1]
+                    };
+                    row = [...row, formatScore(scoreMap[viewMode as keyof typeof scoreMap] || 0), status];
                 }
-
                 rows.push(row);
             });
 
@@ -428,28 +296,52 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
         } else {
             // TXT format
             content = `${baseTitle} - ${exportOrder === 'input' ? 'Input Order' : 'Ranked Order'}\n`;
-            content += `Generated: ${formatDate(new Date().toISOString())}\n`;
+            content += `Generated: ${formatDate(new Date().toISOString())}\n\n`;
 
+            // Comprehensive formula explanation for final rankings, tech combined, and perf average
             if (viewMode === 'final') {
-                content += `Formula: ((Tech1 + Tech2 + Tech3) / ${formatScore(highestTechnicalTotal)}) × 70 + (Perf1 + Perf2) ÷ 2\n\n`;
+                content += `SCORING FORMULA:\n`;
+                content += `Final Score = ((Tech1 + Tech2 + Tech3) ÷ Highest Tech Total) × 70 + (Perf1 + Perf2) ÷ 2\n\n`;
+                content += `COMPONENT BREAKDOWN:\n`;
+                content += `• Technical Component: Normalized to 70 points maximum\n`;
+                content += `  - Raw scores from 3 technical judges are summed\n`;
+                content += `  - Divided by highest technical total: ${formatScore(highestTechnicalTotal)}\n`;
+                content += `  - Multiplied by 70 for normalization\n`;
+                content += `• Performance Component: Averaged to 30 points maximum\n`;
+                content += `  - Raw scores from 2 performance judges\n`;
+                content += `  - Averaged (not summed) for fairness\n`;
+                content += `• Maximum Possible Score: 100 points\n`;
+                content += `• Disqualified competitors: 0 points, ranked last\n\n`;
             } else if (viewMode === 'technical') {
-                content += `Formula: ((Tech1 + Tech2 + Tech3) / ${formatScore(highestTechnicalTotal)}) × 70\n\n`;
+                content += `TECHNICAL SCORING FORMULA:\n`;
+                content += `Tech Score = ((Tech1 + Tech2 + Tech3) ÷ Highest Tech Total) × 70\n\n`;
+                content += `TECHNICAL BREAKDOWN:\n`;
+                content += `• Raw scores from 3 technical judges are summed\n`;
+                content += `• Divided by highest technical total in competition: ${formatScore(highestTechnicalTotal)}\n`;
+                content += `• Multiplied by 70 for normalization\n`;
+                content += `• Maximum Technical Score: 70 points\n`;
+                content += `• Disqualified competitors: 0 points, ranked last\n\n`;
             } else if (viewMode === 'performance') {
-                content += `Formula: (Perf1 + Perf2) ÷ 2\n\n`;
+                content += `PERFORMANCE SCORING FORMULA:\n`;
+                content += `Performance Score = (Perf1 + Perf2) ÷ 2\n\n`;
+                content += `PERFORMANCE BREAKDOWN:\n`;
+                content += `• Raw scores from 2 performance judges\n`;
+                content += `• Averaged (not summed) for fairness\n`;
+                content += `• Maximum Performance Score: 30 points\n`;
+                content += `• Disqualified competitors: 0 points, ranked last\n\n`;
             } else {
                 content += `Individual Judge Rankings\n\n`;
             }
 
-            // Define column widths based on content type
-            const colWidths = {
-                pos: 5,           // Position
-                competitor: 22,   // Competitor name
-                details: 40,      // Score details/breakdown
-                final: 12,        // Final score
-                status: 6         // Status
-            };
+            // Enhanced column widths for comprehensive display
+            const colWidths = viewMode === 'final' ?
+                { pos: 4, competitor: 20, tech1: 6, tech2: 6, tech3: 6, techTotal: 9, techNorm: 9, perf1: 6, perf2: 6, perfAvg: 8, final: 8, status: 6 } as const :
+                viewMode === 'technical' ?
+                    { pos: 4, competitor: 20, tech1: 6, tech2: 6, tech3: 6, techTotal: 9, techNorm: 9, status: 6 } as const :
+                    viewMode === 'performance' ?
+                        { pos: 4, competitor: 20, perf1: 6, perf2: 6, perfAvg: 8, status: 6 } as const :
+                        { pos: 5, competitor: 22, details: 40, final: 12, status: 6 } as const;
 
-            // Helper function to pad text to column width
             const padColumn = (text: string, width: number, align: 'left' | 'right' = 'left'): string => {
                 const str = String(text || '');
                 if (str.length >= width) return str.substring(0, width);
@@ -459,42 +351,170 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
 
             const positionHeader = exportOrder === 'input' ? 'Pos' : 'Rank';
 
-            // Create header
-            const headerRow =
-                padColumn(positionHeader, colWidths.pos) + '| ' +
-                padColumn('Competitor', colWidths.competitor) + '| ' +
-                padColumn('Score Details', colWidths.details) + '| ' +
-                padColumn('Final Score', colWidths.final) + '| ' +
-                padColumn('Status', colWidths.status);
+            if (viewMode === 'final') {
+                // Comprehensive header for final rankings
+                const finalColWidths = colWidths as { pos: number, competitor: number, tech1: number, tech2: number, tech3: number, techTotal: number, techNorm: number, perf1: number, perf2: number, perfAvg: number, final: number, status: number };
+                const headerRow = padColumn(positionHeader, finalColWidths.pos) + '| ' +
+                    padColumn('Competitor', finalColWidths.competitor) + '| ' +
+                    padColumn('Tech1', finalColWidths.tech1, 'right') + '| ' +
+                    padColumn('Tech2', finalColWidths.tech2, 'right') + '| ' +
+                    padColumn('Tech3', finalColWidths.tech3, 'right') + '| ' +
+                    padColumn('TechTotal', finalColWidths.techTotal, 'right') + '| ' +
+                    padColumn('TechNorm', finalColWidths.techNorm, 'right') + '| ' +
+                    padColumn('Perf1', finalColWidths.perf1, 'right') + '| ' +
+                    padColumn('Perf2', finalColWidths.perf2, 'right') + '| ' +
+                    padColumn('PerfAvg', finalColWidths.perfAvg, 'right') + '| ' +
+                    padColumn('Final', finalColWidths.final, 'right') + '| ' +
+                    padColumn('Status', finalColWidths.status);
 
-            content += headerRow + '\n';
+                content += headerRow + '\n';
+                const totalWidth = Object.values(finalColWidths).reduce((sum, width) => sum + width, 0) + (Object.keys(finalColWidths).length - 1) * 2;
+                content += '-'.repeat(totalWidth) + '\n';
 
-            // Calculate total width for separator
-            const totalWidth = Object.values(colWidths).reduce((sum, width) => sum + width, 0) +
-                (Object.keys(colWidths).length - 1) * 2;
-            content += '-'.repeat(totalWidth) + '\n';
+                sorted.forEach((competitor, index) => {
+                    const position = (exportOrder === 'input' && !competitor.isDisqualified) ?
+                        (index + 1).toString() :
+                        (competitor.isDisqualified ? 'DQ' : (index + 1).toString());
+                    const status = competitor.isDisqualified ? 'DQ' : 'OK';
+                    const techTotal = competitor.technicalScores.reduce((sum, score) => sum + score, 0);
 
-            sortedRankings.forEach((competitor, index) => {
-                const position = exportOrder === 'input' ?
-                    (competitor.isDisqualified ? 'DQ' : (index + 1).toString()) :
-                    (competitor.isDisqualified ? 'DQ' : (index + 1).toString());
-                const status = competitor.isDisqualified ? 'DQ' : 'OK';
-                const displayData = getScoreDisplay(competitor, index, true);
+                    const line = padColumn(position, finalColWidths.pos) + '| ' +
+                        padColumn(competitor.name, finalColWidths.competitor) + '| ' +
+                        padColumn(formatScore(competitor.technicalScores[0]), finalColWidths.tech1, 'right') + '| ' +
+                        padColumn(formatScore(competitor.technicalScores[1]), finalColWidths.tech2, 'right') + '| ' +
+                        padColumn(formatScore(competitor.technicalScores[2]), finalColWidths.tech3, 'right') + '| ' +
+                        padColumn(formatScore(techTotal), finalColWidths.techTotal, 'right') + '| ' +
+                        padColumn(formatScore(competitor.normalizedTechnical), finalColWidths.techNorm, 'right') + '| ' +
+                        padColumn(formatScore(competitor.performanceScores[0]), finalColWidths.perf1, 'right') + '| ' +
+                        padColumn(formatScore(competitor.performanceScores[1]), finalColWidths.perf2, 'right') + '| ' +
+                        padColumn(formatScore(competitor.averagePerformance), finalColWidths.perfAvg, 'right') + '| ' +
+                        padColumn(formatScore(competitor.finalScore), finalColWidths.final, 'right') + '| ' +
+                        padColumn(status, finalColWidths.status);
 
-                const line =
-                    padColumn(position, colWidths.pos) + '| ' +
-                    padColumn(competitor.name, colWidths.competitor) + '| ' +
-                    padColumn(displayData.breakdown, colWidths.details) + '| ' +
-                    padColumn(displayData.score, colWidths.final, 'right') + '| ' +
-                    padColumn(status, colWidths.status);
+                    content += line + '\n';
+                });
+            } else if (viewMode === 'technical') {
+                // Comprehensive header for technical rankings
+                const techColWidths = colWidths as { pos: number, competitor: number, tech1: number, tech2: number, tech3: number, techTotal: number, techNorm: number, status: number };
+                const headerRow = padColumn(positionHeader, techColWidths.pos) + '| ' +
+                    padColumn('Competitor', techColWidths.competitor) + '| ' +
+                    padColumn('Tech1', techColWidths.tech1, 'right') + '| ' +
+                    padColumn('Tech2', techColWidths.tech2, 'right') + '| ' +
+                    padColumn('Tech3', techColWidths.tech3, 'right') + '| ' +
+                    padColumn('TechTotal', techColWidths.techTotal, 'right') + '| ' +
+                    padColumn('TechNorm', techColWidths.techNorm, 'right') + '| ' +
+                    padColumn('Status', techColWidths.status);
 
-                content += line + '\n';
-            });
+                content += headerRow + '\n';
+                const totalWidth = Object.values(techColWidths).reduce((sum, width) => sum + width, 0) + (Object.keys(techColWidths).length - 1) * 2;
+                content += '-'.repeat(totalWidth) + '\n';
+
+                sorted.forEach((competitor, index) => {
+                    const position = (exportOrder === 'input' && !competitor.isDisqualified) ?
+                        (index + 1).toString() :
+                        (competitor.isDisqualified ? 'DQ' : (index + 1).toString());
+                    const status = competitor.isDisqualified ? 'DQ' : 'OK';
+                    const techTotal = competitor.technicalScores.reduce((sum, score) => sum + score, 0);
+
+                    const line = padColumn(position, techColWidths.pos) + '| ' +
+                        padColumn(competitor.name, techColWidths.competitor) + '| ' +
+                        padColumn(formatScore(competitor.technicalScores[0]), techColWidths.tech1, 'right') + '| ' +
+                        padColumn(formatScore(competitor.technicalScores[1]), techColWidths.tech2, 'right') + '| ' +
+                        padColumn(formatScore(competitor.technicalScores[2]), techColWidths.tech3, 'right') + '| ' +
+                        padColumn(formatScore(techTotal), techColWidths.techTotal, 'right') + '| ' +
+                        padColumn(formatScore(competitor.normalizedTechnical), techColWidths.techNorm, 'right') + '| ' +
+                        padColumn(status, techColWidths.status);
+
+                    content += line + '\n';
+                });
+            } else if (viewMode === 'performance') {
+                // Comprehensive header for performance rankings
+                const perfColWidths = colWidths as { pos: number, competitor: number, perf1: number, perf2: number, perfAvg: number, status: number };
+                const headerRow = padColumn(positionHeader, perfColWidths.pos) + '| ' +
+                    padColumn('Competitor', perfColWidths.competitor) + '| ' +
+                    padColumn('Perf1', perfColWidths.perf1, 'right') + '| ' +
+                    padColumn('Perf2', perfColWidths.perf2, 'right') + '| ' +
+                    padColumn('PerfAvg', perfColWidths.perfAvg, 'right') + '| ' +
+                    padColumn('Status', perfColWidths.status);
+
+                content += headerRow + '\n';
+                const totalWidth = Object.values(perfColWidths).reduce((sum, width) => sum + width, 0) + (Object.keys(perfColWidths).length - 1) * 2;
+                content += '-'.repeat(totalWidth) + '\n';
+
+                sorted.forEach((competitor, index) => {
+                    const position = (exportOrder === 'input' && !competitor.isDisqualified) ?
+                        (index + 1).toString() :
+                        (competitor.isDisqualified ? 'DQ' : (index + 1).toString());
+                    const status = competitor.isDisqualified ? 'DQ' : 'OK';
+
+                    const line = padColumn(position, perfColWidths.pos) + '| ' +
+                        padColumn(competitor.name, perfColWidths.competitor) + '| ' +
+                        padColumn(formatScore(competitor.performanceScores[0]), perfColWidths.perf1, 'right') + '| ' +
+                        padColumn(formatScore(competitor.performanceScores[1]), perfColWidths.perf2, 'right') + '| ' +
+                        padColumn(formatScore(competitor.averagePerformance), perfColWidths.perfAvg, 'right') + '| ' +
+                        padColumn(status, perfColWidths.status);
+
+                    content += line + '\n';
+                });
+            } else {
+                // Standard format for other view modes
+                const standardColWidths = colWidths as { pos: number, competitor: number, details: number, final: number, status: number };
+                const headerRow = padColumn(positionHeader, standardColWidths.pos) + '| ' +
+                    padColumn('Competitor', standardColWidths.competitor) + '| ' +
+                    padColumn('Score Details', standardColWidths.details) + '| ' +
+                    padColumn('Final Score', standardColWidths.final) + '| ' +
+                    padColumn('Status', standardColWidths.status);
+
+                content += headerRow + '\n';
+                content += '-'.repeat(Object.values(standardColWidths).reduce((sum, width) => sum + width, 0) + (Object.keys(standardColWidths).length - 1) * 2) + '\n';
+
+                sorted.forEach((competitor, index) => {
+                    const position = competitor.isDisqualified ? 'DQ' : (index + 1).toString();
+                    const status = competitor.isDisqualified ? 'DQ' : 'OK';
+                    const displayData = getScoreDisplay(competitor, index, true);
+
+                    const line = padColumn(position, standardColWidths.pos) + '| ' +
+                        padColumn(competitor.name, standardColWidths.competitor) + '| ' +
+                        padColumn(displayData.breakdown, standardColWidths.details) + '| ' +
+                        padColumn(displayData.score, standardColWidths.final, 'right') + '| ' +
+                        padColumn(status, standardColWidths.status);
+
+                    content += line + '\n';
+                });
+            }
         }
 
         const mimeType = format === 'csv' ? 'text/csv;charset=utf-8' : 'text/plain;charset=utf-8';
         downloadFile(filename, content, mimeType);
     };
+
+    const renderScoreInput = (assignment: JudgeAssignment, field: 'tech1' | 'tech2' | 'tech3' | 'perf1' | 'perf2') => (
+        <input
+            type="text"
+            value={assignment[field]}
+            onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                updateAssignment(assignment.competitorName, field, isNaN(value) ? 0 : value);
+            }}
+            disabled={assignment.isDisqualified}
+            style={{
+                width: '80px', padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db',
+                textAlign: 'center', backgroundColor: assignment.isDisqualified ? '#f3f4f6' : 'white',
+                appearance: 'textfield'
+            }}
+        />
+    );
+
+    const viewModeButtons = [
+        { key: 'final', label: 'Final Rankings' },
+        { key: 'technical', label: 'Technical Combined' },
+        { key: 'performance', label: 'Performance Average' },
+        { key: 'tech1', label: 'Tech Judge 1' },
+        { key: 'tech2', label: 'Tech Judge 2' },
+        { key: 'tech3', label: 'Tech Judge 3' },
+        { key: 'perf1', label: 'Perf Judge 1' },
+        { key: 'perf2', label: 'Perf Judge 2' }
+    ];
 
     return (
         <>
@@ -507,23 +527,21 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
             <div className="section">
                 <div className="section-title">Management:</div>
                 <div className="button-row">
-                    <button onClick={addCompetitor} className="feature-button feature-active">
-                        Add Competitor
-                    </button>
-                    <button onClick={clearAllScores} className="feature-button"
-                            style={{backgroundColor: '#dc2626', color: 'white'}}>
-                        Clear All Scores
-                    </button>
+                    <button onClick={addCompetitor} className="feature-button feature-active">Add Competitor</button>
+                    <button onClick={clearAllScores} className="feature-button" style={{backgroundColor: '#f59e0b', color: 'white'}}>Clear Scores Only</button>
+                    <button onClick={clearAllData} className="feature-button" style={{backgroundColor: '#dc2626', color: 'white'}}>Clear All Data</button>
+                </div>
+                <div className="selected-features">
+                    • <strong>Clear Scores Only:</strong> Resets all scores to 0 but keeps competitors<br/>
+                    • <strong>Clear All Data:</strong> Removes all competitors and scores permanently
                 </div>
             </div>
-
 
             {/* Formula Explanation */}
             <div className="section">
                 <div className="section-title">Scoring Formula:</div>
                 <div className="selected-features">
-                    <strong>Final Score = ((Tech1 + Tech2 + Tech3) ÷ {formatScore(highestTechnicalTotal)}) × 70 + (Perf1
-                        + Perf2) ÷ 2</strong><br/>
+                    <strong>Final Score = ((Tech1 + Tech2 + Tech3) ÷ Highest Tech Total) × 70 + (Perf1 + Perf2) ÷ 2</strong><br/>
                     • Technical scores are normalized to 70 points maximum based on highest total<br/>
                     • Performance scores are averaged (not summed) for fairness<br/>
                     • Maximum possible final score: 100 points (70 technical + 30 performance)<br/>
@@ -535,192 +553,37 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
             <div className="section">
                 <div className="section-title">Judge Score Assignments:</div>
                 <div style={{overflowX: 'auto'}}>
-                    <table style={{
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px'
-                    }}>
+                    <table style={{width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px'}}>
                         <thead>
                         <tr style={{backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb'}}>
-                            <th style={{
-                                padding: '12px',
-                                textAlign: 'left',
-                                fontWeight: 'bold',
-                                width: '200px'
-                            }}>Competitor
-                            </th>
-                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Tech
-                                1
-                            </th>
-                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Tech
-                                2
-                            </th>
-                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Tech
-                                3
-                            </th>
-                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Perf
-                                1
-                            </th>
-                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Perf
-                                2
-                            </th>
-                            <th style={{
-                                padding: '12px',
-                                textAlign: 'center',
-                                fontWeight: 'bold',
-                                width: '60px'
-                            }}>DQ
-                            </th>
-                            <th style={{
-                                padding: '12px',
-                                textAlign: 'center',
-                                fontWeight: 'bold',
-                                width: '80px'
-                            }}>Actions
-                            </th>
+                            <th style={{padding: '12px', textAlign: 'left', fontWeight: 'bold', width: '200px'}}>Competitor</th>
+                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Tech 1</th>
+                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Tech 2</th>
+                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Tech 3</th>
+                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Perf 1</th>
+                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '90px'}}>Perf 2</th>
+                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '60px'}}>DQ</th>
+                            <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold', width: '80px'}}>Actions</th>
                         </tr>
                         </thead>
                         <tbody>
-                        {judgeAssignments.map((assignment, index) => (
+                        {judgeAssignments.map((assignment) => (
                             <tr key={assignment.competitorName} style={{borderBottom: '1px solid #e5e7eb'}}>
-                                <td style={{padding: '12px', fontWeight: 'bold', width: '200px'}}>
-                                    {assignment.competitorName}
-                                </td>
-                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>
-                                    <input
-                                        type="text"
-                                        value={assignment.tech1}
-                                        onChange={(e) => {
-                                            const value = parseFloat(e.target.value);
-                                            if (!isNaN(value) || e.target.value === '') {
-                                                updateAssignment(assignment.competitorName, 'tech1', isNaN(value) ? 0 : value);
-                                            }
-                                        }}
-                                        disabled={assignment.isDisqualified}
-                                        style={{
-                                            width: '80px',
-                                            padding: '6px',
-                                            borderRadius: '4px',
-                                            border: '1px solid #d1d5db',
-                                            textAlign: 'center',
-                                            backgroundColor: assignment.isDisqualified ? '#f3f4f6' : 'white',
-                                            appearance: 'textfield'
-                                        }}
-                                    />
-                                </td>
-                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>
-                                    <input
-                                        type="text"
-                                        value={assignment.tech2}
-                                        onChange={(e) => {
-                                            const value = parseFloat(e.target.value);
-                                            if (!isNaN(value) || e.target.value === '') {
-                                                updateAssignment(assignment.competitorName, 'tech2', isNaN(value) ? 0 : value);
-                                            }
-                                        }}
-                                        disabled={assignment.isDisqualified}
-                                        style={{
-                                            width: '80px',
-                                            padding: '6px',
-                                            borderRadius: '4px',
-                                            border: '1px solid #d1d5db',
-                                            textAlign: 'center',
-                                            backgroundColor: assignment.isDisqualified ? '#f3f4f6' : 'white',
-                                            appearance: 'textfield'
-                                        }}
-                                    />
-                                </td>
-                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>
-                                    <input
-                                        type="text"
-                                        value={assignment.tech3}
-                                        onChange={(e) => {
-                                            const value = parseFloat(e.target.value);
-                                            if (!isNaN(value) || e.target.value === '') {
-                                                updateAssignment(assignment.competitorName, 'tech3', isNaN(value) ? 0 : value);
-                                            }
-                                        }}
-                                        disabled={assignment.isDisqualified}
-                                        style={{
-                                            width: '80px',
-                                            padding: '6px',
-                                            borderRadius: '4px',
-                                            border: '1px solid #d1d5db',
-                                            textAlign: 'center',
-                                            backgroundColor: assignment.isDisqualified ? '#f3f4f6' : 'white',
-                                            appearance: 'textfield'
-                                        }}
-                                    />
-                                </td>
-                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>
-                                    <input
-                                        type="text"
-                                        value={assignment.perf1}
-                                        onChange={(e) => {
-                                            const value = parseFloat(e.target.value);
-                                            if (!isNaN(value) || e.target.value === '') {
-                                                updateAssignment(assignment.competitorName, 'perf1', isNaN(value) ? 0 : value);
-                                            }
-                                        }}
-                                        disabled={assignment.isDisqualified}
-                                        style={{
-                                            width: '80px',
-                                            padding: '6px',
-                                            borderRadius: '4px',
-                                            border: '1px solid #d1d5db',
-                                            textAlign: 'center',
-                                            backgroundColor: assignment.isDisqualified ? '#f3f4f6' : 'white',
-                                            appearance: 'textfield'
-                                        }}
-                                    />
-                                </td>
-                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>
-                                    <input
-                                        type="text"
-                                        value={assignment.perf2}
-                                        onChange={(e) => {
-                                            const value = parseFloat(e.target.value);
-                                            if (!isNaN(value) || e.target.value === '') {
-                                                updateAssignment(assignment.competitorName, 'perf2', isNaN(value) ? 0 : value);
-                                            }
-                                        }}
-                                        disabled={assignment.isDisqualified}
-                                        style={{
-                                            width: '80px',
-                                            padding: '6px',
-                                            borderRadius: '4px',
-                                            border: '1px solid #d1d5db',
-                                            textAlign: 'center',
-                                            backgroundColor: assignment.isDisqualified ? '#f3f4f6' : 'white',
-                                            appearance: 'textfield'
-                                        }}
-                                    />
-                                </td>
+                                <td style={{padding: '12px', fontWeight: 'bold', width: '200px'}}>{assignment.competitorName}</td>
+                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>{renderScoreInput(assignment, 'tech1')}</td>
+                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>{renderScoreInput(assignment, 'tech2')}</td>
+                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>{renderScoreInput(assignment, 'tech3')}</td>
+                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>{renderScoreInput(assignment, 'perf1')}</td>
+                                <td style={{padding: '8px', width: '90px', textAlign: 'center'}}>{renderScoreInput(assignment, 'perf2')}</td>
                                 <td style={{padding: '8px', textAlign: 'center', width: '60px'}}>
-                                    <input
-                                        type="checkbox"
-                                        checked={assignment.isDisqualified}
-                                        onChange={(e) => updateAssignment(assignment.competitorName, 'isDisqualified', e.target.checked)}
-                                        style={{transform: 'scale(1.2)'}}
-                                    />
+                                    <input type="checkbox" checked={assignment.isDisqualified}
+                                           onChange={(e) => updateAssignment(assignment.competitorName, 'isDisqualified', e.target.checked)}
+                                           style={{transform: 'scale(1.2)'}} />
                                 </td>
                                 <td style={{padding: '8px', textAlign: 'center', width: '80px'}}>
-                                    <button
-                                        onClick={() => removeCompetitor(assignment.competitorName)}
-                                        style={{
-                                            backgroundColor: '#dc2626',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '4px',
-                                            padding: '6px 12px',
-                                            fontSize: '12px',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Remove
-                                    </button>
+                                    <button onClick={() => removeCompetitor(assignment.competitorName)}
+                                            style={{backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px',
+                                                padding: '6px 12px', fontSize: '12px', cursor: 'pointer'}}>Remove</button>
                                 </td>
                             </tr>
                         ))}
@@ -734,54 +597,12 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
                 <div className="section">
                     <div className="section-title">View Rankings By:</div>
                     <div className="button-row" style={{flexWrap: 'wrap'}}>
-                        <button
-                            onClick={() => setViewMode('final')}
-                            className={`feature-button ${viewMode === 'final' ? 'feature-active' : ''}`}
-                        >
-                            Final Rankings
-                        </button>
-                        <button
-                            onClick={() => setViewMode('technical')}
-                            className={`feature-button ${viewMode === 'technical' ? 'feature-active' : ''}`}
-                        >
-                            Technical Combined
-                        </button>
-                        <button
-                            onClick={() => setViewMode('performance')}
-                            className={`feature-button ${viewMode === 'performance' ? 'feature-active' : ''}`}
-                        >
-                            Performance Average
-                        </button>
-                        <button
-                            onClick={() => setViewMode('tech1')}
-                            className={`feature-button ${viewMode === 'tech1' ? 'feature-active' : ''}`}
-                        >
-                            Tech Judge 1
-                        </button>
-                        <button
-                            onClick={() => setViewMode('tech2')}
-                            className={`feature-button ${viewMode === 'tech2' ? 'feature-active' : ''}`}
-                        >
-                            Tech Judge 2
-                        </button>
-                        <button
-                            onClick={() => setViewMode('tech3')}
-                            className={`feature-button ${viewMode === 'tech3' ? 'feature-active' : ''}`}
-                        >
-                            Tech Judge 3
-                        </button>
-                        <button
-                            onClick={() => setViewMode('perf1')}
-                            className={`feature-button ${viewMode === 'perf1' ? 'feature-active' : ''}`}
-                        >
-                            Perf Judge 1
-                        </button>
-                        <button
-                            onClick={() => setViewMode('perf2')}
-                            className={`feature-button ${viewMode === 'perf2' ? 'feature-active' : ''}`}
-                        >
-                            Perf Judge 2
-                        </button>
+                        {viewModeButtons.map(({key, label}) => (
+                            <button key={key} onClick={() => setViewMode(key as any)}
+                                    className={`feature-button ${viewMode === key ? 'feature-active' : ''}`}>
+                                {label}
+                            </button>
+                        ))}
                     </div>
                 </div>
             )}
@@ -796,22 +617,17 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
                     <div className="details-list">
                         {getSortedRankings().map((competitor, index) => {
                             const displayData = getScoreDisplay(competitor, index);
-
                             return (
-                                <div key={competitor.name}
-                                     className={`detail-item ${competitor.isDisqualified ? 'deduction-item-detail' : ''}`}>
+                                <div key={competitor.name} className={`detail-item ${competitor.isDisqualified ? 'deduction-item-detail' : ''}`}>
                                     <div>
                                         <div className="detail-identifier">
                                             {displayData.rank}. {competitor.name}
                                             {competitor.isDisqualified && ' (DISQUALIFIED)'}
                                         </div>
-                                        <div className="detail-breakdown">
-                                            {displayData.breakdown}
-                                        </div>
+                                        <div className="detail-breakdown">{displayData.breakdown}</div>
                                     </div>
                                     <div className="detail-score">
-                                        <div
-                                            className={`detail-points ${competitor.isDisqualified ? 'deduction-points' : ''}`}>
+                                        <div className={`detail-points ${competitor.isDisqualified ? 'deduction-points' : ''}`}>
                                             {displayData.score}
                                         </div>
                                     </div>
@@ -825,34 +641,24 @@ const FinalRankingsTab: React.FC<FinalRankingsTabProps> = ({savedCompetitors}) =
             {/* Export Current Rankings */}
             {finalRankings.length > 0 && (
                 <div className="section">
-                    <div className="section-title">Export Current Rankings
-                        ({getRankingTitle().replace(' (Input Order)', '').replace(' (Ranked Order)', '')}):
-                    </div>
+                    <div className="section-title">Export Current Rankings ({getRankingTitle().replace(' (Input Order)', '').replace(' (Ranked Order)', '')}):</div>
                     <div className="section">
                         <div className="section-title">Export Order:</div>
                         <div className="button-row">
-                            <button
-                                onClick={() => setExportOrder('ranking')}
-                                className={`feature-button ${exportOrder === 'ranking' ? 'feature-active' : ''}`}
-                            >
+                            <button onClick={() => setExportOrder('ranking')}
+                                    className={`feature-button ${exportOrder === 'ranking' ? 'feature-active' : ''}`}>
                                 Ranked Order (1st to Last)
                             </button>
-                            <button
-                                onClick={() => setExportOrder('input')}
-                                className={`feature-button ${exportOrder === 'input' ? 'feature-active' : ''}`}
-                            >
+                            <button onClick={() => setExportOrder('input')}
+                                    className={`feature-button ${exportOrder === 'input' ? 'feature-active' : ''}`}>
                                 Input Order (As Entered)
                             </button>
                         </div>
                     </div>
                     <div className="section-title">Export Format:</div>
                     <div className="button-row">
-                        <button onClick={() => exportCurrentRankings('csv')} className="feature-button feature-active">
-                            Export CSV
-                        </button>
-                        <button onClick={() => exportCurrentRankings('txt')} className="feature-button feature-active">
-                            Export TXT
-                        </button>
+                        <button onClick={() => exportCurrentRankings('csv')} className="feature-button feature-active">Export CSV</button>
+                        <button onClick={() => exportCurrentRankings('txt')} className="feature-button feature-active">Export TXT</button>
                     </div>
                 </div>
             )}

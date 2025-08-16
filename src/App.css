@@ -811,3 +811,159 @@ input[type="number"] {
 .dark-mode .hotkey-config-button:hover {
     background: #4b5563;
 }
+/* Dark mode styles for recent scores panel */
+.dark-mode .recent-scores-list {
+    background-color: #1f2937 !important;
+    border-color: #4b5563 !important;
+}
+
+.dark-mode .recent-score-item {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+}
+
+.dark-mode .recent-score-item.deduction-item {
+    background-color: #7f1d1d !important;
+}
+
+/* Dark mode styles for Final Rankings Tab tables */
+.dark-mode table {
+    background-color: #1f2937 !important;
+    border-color: #4b5563 !important;
+    color: #f9fafb;
+}
+
+.dark-mode th {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+    border-bottom-color: #4b5563 !important;
+}
+
+.dark-mode td {
+    color: #f9fafb !important;
+    border-bottom-color: #4b5563 !important;
+}
+
+/* Dark mode styles for Final Rankings input fields */
+.dark-mode input[type="text"]:not(.competitor-input):not(.form-input):not(.judge-score-input) {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f9fafb !important;
+}
+
+.dark-mode input[type="text"]:disabled:not(.competitor-input):not(.form-input):not(.judge-score-input) {
+    background-color: #1f2937 !important;
+    color: #4b5563 !important;
+}
+
+/* Dark mode for checkboxes in Final Rankings */
+.dark-mode input[type="checkbox"] {
+    accent-color: #60a5fa;
+}
+
+/* Dark mode for Final Rankings buttons */
+.dark-mode button[style*="background-color: #dc2626"] {
+    background-color: #dc2626 !important;
+    color: white !important;
+}
+
+.dark-mode button[style*="background-color: #dc2626"]:hover {
+    background-color: #b91c1c !important;
+}
+
+/* Dark mode for Hotkey Manager overlay */
+.dark-mode .hotkey-overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* Additional dark mode styles for hotkey manager elements */
+.dark-mode .hotkey-assign.recording {
+    background: #dc2626 !important;
+    color: white !important;
+}
+
+.dark-mode .hotkey-assign:disabled {
+    background: #4b5563 !important;
+    color: #9ca3af !important;
+}
+
+.dark-mode .hotkey-clear {
+    background: #dc2626 !important;
+    color: white !important;
+}
+
+.dark-mode .hotkey-clear:hover {
+    background: #b91c1c !important;
+}
+
+.dark-mode .hotkey-cancel {
+    background: #4b5563 !important;
+    color: white !important;
+}
+
+.dark-mode .hotkey-cancel:hover {
+    background: #374151 !important;
+}
+
+.dark-mode .hotkey-save {
+    background: #047857 !important;
+    color: white !important;
+}
+
+.dark-mode .hotkey-save:hover {
+    background: #065f46 !important;
+}
+
+/* Dark mode for recent scores panel specific styling */
+.dark-mode .recent-scores-panel {
+    color: #f9fafb;
+}
+
+.dark-mode .recent-scores-list {
+    background-color: #1f2937 !important;
+    border-color: #4b5563 !important;
+}
+
+.dark-mode .recent-score-item {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+}
+
+.dark-mode .recent-score-item.deduction-item {
+    background-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+}
+
+/* Dark mode for trick sequence panel text */
+.dark-mode .recent-scores-panel .section-title,
+.dark-mode .recent-scores-panel .selected-features {
+    color: #f9fafb !important;
+}
+
+/* Dark mode for Final Rankings specific elements */
+.dark-mode .details-header .details-title {
+    color: #f9fafb !important;
+}
+
+.dark-mode .details-header .details-total {
+    color: #93c5fd !important;
+}
+
+/* Dark mode for inline styles in Final Rankings tables */
+.dark-mode [style*="background-color: #f9fafb"] {
+    background-color: #374151 !important;
+}
+
+.dark-mode [style*="border-bottom: 1px solid #e5e7eb"] {
+    border-bottom-color: #4b5563 !important;
+}
+
+/* Dark mode for buttons with specific background colors in Final Rankings */
+.dark-mode button[style*="backgroundColor: '#dc2626'"] {
+    background-color: #dc2626 !important;
+    color: white !important;
+}
+
+.dark-mode button[style*="backgroundColor: '#dc2626'"]:hover {
+    background-color: #b91c1c !important;
+}
