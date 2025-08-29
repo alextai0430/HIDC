@@ -4,7 +4,7 @@ import { Feature, Score, SavedCompetitor, PerformanceScore, JudgeCategory } from
 import { tricks, features, majorDeductions, multiplierLevels, goeLevels } from './constants';
 import { formatScore } from './utils';
 import Login from './Login';
-import ScoringTab from './ScoringTab';
+import TechnicalTab from './ScoringTab';
 import PerformanceTab from './PerformanceTab';
 import ScoreDetailsTab from './ScoreDetailsTab';
 import SavedCompetitorsTab from './SavedCompetitorsTab';
@@ -31,7 +31,7 @@ const App: React.FC = () => {
     const [selectedDeductions, setSelectedDeductions] = useState<{name: string, points: number, abbrev: string}[]>([]);
     const [selectedFeatures, setSelectedFeatures] = useState<Feature[]>([]);
     const [goeLevel, setGoeLevel] = useState(0);
-    const [multiplierLevel, setMultiplierLevel] = useState<number | null>(null);
+    const [multiplierLevel, setMultiplierLevel] = useState<number>(1); // Default to L1
 
     // Performance scoring state
     const [performanceScores, setPerformanceScores] = useState<PerformanceScore>({
@@ -111,7 +111,7 @@ const App: React.FC = () => {
                 setSelectedTrick(null);
                 setSelectedFeatures([]);
                 setGoeLevel(0);
-                setMultiplierLevel(null);
+                setMultiplierLevel(1); // Reset to L1 instead of null
             }
             setSelectedDeductions([...selectedDeductions, deduction]);
         }
@@ -129,7 +129,7 @@ const App: React.FC = () => {
     };
 
     const toggleMultiplier = (level: number) => {
-        setMultiplierLevel(multiplierLevel === level ? null : level);
+        setMultiplierLevel(multiplierLevel === level ? 1 : level); // Default back to L1 instead of null
     };
 
     const getPreviewScore = () => {
@@ -144,7 +144,7 @@ const App: React.FC = () => {
             else if (feature.multiplier) preview *= feature.multiplier;
         });
         preview *= goeLevels[goeLevel] ?? 1.0;
-        if (multiplierLevel) preview *= multiplierLevels[multiplierLevel];
+        preview *= multiplierLevels[multiplierLevel] ?? 1.0; // Use multiplierLevel directly (no null check needed)
         selectedDeductions.forEach(deduction => preview += deduction.points);
         return preview;
     };
@@ -163,12 +163,13 @@ const App: React.FC = () => {
             // Add difficulty prefix
             identifier = selectedTrick.difficulty.replace('D', '') + identifier;
 
-            // Apply multipliers and features in order
-            const multiplier = multiplierLevel ? multiplierLevels[multiplierLevel] : 1;
-            if (multiplierLevel) {
-                identifier += `L${multiplierLevel}`;
-                finalScore *= multiplier;
-                description += `×L${multiplierLevel}`;
+            // Apply level multiplier (always present now, default L1)
+            const multiplier = multiplierLevels[multiplierLevel];
+            finalScore *= multiplier;
+            if (multiplierLevel !== 1) { // Only show level if it's not the default L1
+                const levelDisplay = multiplierLevel === 0.5 ? '0.5' : multiplierLevel.toString();
+                identifier += `L${levelDisplay}`;
+                description += `×L${levelDisplay}`;
             }
 
             selectedFeatures.forEach(feature => {
@@ -215,7 +216,7 @@ const App: React.FC = () => {
             const newScore: Score = {
                 id: Date.now(), trick: selectedDeductions.length === 1 ? selectedDeductions[0].name : 'Multiple Deductions',
                 difficulty: 'DEDUCTION', baseScore: finalScore, features: [], goeLevel: 0,
-                multiplierLevel: null, finalScore, description, identifier, deductions: [...selectedDeductions]
+                multiplierLevel: 1, finalScore, description, identifier, deductions: [...selectedDeductions]
             };
 
             setScores([...scores, newScore]);
@@ -225,7 +226,7 @@ const App: React.FC = () => {
         // Reset selections
         setSelectedTrick(null);
         setSelectedDeductions([]);
-        setMultiplierLevel(null);
+        setMultiplierLevel(1); // Reset to L1 instead of null
         setSelectedFeatures([]);
         setGoeLevel(0);
     };
@@ -241,7 +242,7 @@ const App: React.FC = () => {
     const resetScores = () => {
         setScores([]);
         setTotalScore(0);
-        setMultiplierLevel(null);
+        setMultiplierLevel(1); // Reset to L1 instead of null
         setSelectedFeatures([]);
         setGoeLevel(0);
         setSelectedTrick(null);
@@ -314,7 +315,7 @@ const App: React.FC = () => {
         // Reset selections
         setSelectedTrick(null);
         setSelectedDeductions([]);
-        setMultiplierLevel(null);
+        setMultiplierLevel(1); // Reset to L1 instead of null
         setSelectedFeatures([]);
         setGoeLevel(0);
     };
@@ -357,7 +358,7 @@ const App: React.FC = () => {
     if (!isAuthenticated) return <Login onLogin={handleLogin} />;
 
     const tabComponents = {
-        technical: <ScoringTab {...{competitorName, setCompetitorName, judgeName, setJudgeName, judgeCategory, setJudgeCategory, totalScore, scores, editingCompetitor, selectedTrick, selectedDeductions, selectedFeatures, goeLevel, multiplierLevel, showPoints: showPoints && isAdmin, isAdmin, isDisqualified, setIsDisqualified, selectTrick, selectDeduction: toggleDeduction, setGoeLevel, toggleMultiplier, toggleFeature, getPreviewScore, submitScore, removeScore, resetScores, cancelEdit, submitFinalScore}} />,
+        technical: <TechnicalTab {...{competitorName, setCompetitorName, judgeName, setJudgeName, judgeCategory, setJudgeCategory, totalScore, scores, editingCompetitor, selectedTrick, selectedDeductions, selectedFeatures, goeLevel, multiplierLevel, showPoints: showPoints && isAdmin, isAdmin, isDisqualified, setIsDisqualified, selectTrick, selectDeduction: toggleDeduction, setGoeLevel, toggleMultiplier, toggleFeature, getPreviewScore, submitScore, removeScore, resetScores, cancelEdit, submitFinalScore}} />,
         performance: <PerformanceTab {...{competitorName, setCompetitorName, judgeName, setJudgeName, judgeCategory, setJudgeCategory, performanceScores, setPerformanceScores, totalPerformanceScore, editingCompetitor, isDisqualified, setIsDisqualified, resetPerformanceScores, cancelEdit, submitFinalScore}} />,
         details: isAdmin && <ScoreDetailsTab {...{competitorName, totalScore, scores, removeScore, savedCompetitors}} />,
         saved: <SavedCompetitorsTab {...{savedCompetitors, selectedCompetitorDetails, setSelectedCompetitorDetails, loadCompetitorForEditing, deleteCompetitor, isAdmin}} />,

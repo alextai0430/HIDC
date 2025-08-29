@@ -14,7 +14,7 @@ export const features: Feature[] = [
     { name: 'Turn 360', abbrev: 'T1', multiplier: 1.7, type: 'turn' },
     { name: 'Turn 720', abbrev: 'T2', multiplier: 3.0, type: 'turn' },
     { name: 'Turn 1080', abbrev: 'T3', multiplier: 5.0, type: 'turn' },
-    { name: 'Acro', abbrev: 'A', points: 0.2, type: 'acro' }
+    { name: 'Acro', abbrev: 'A', multiplier: 1.7, type: 'acro' } // Changed from points: 0.2 to multiplier: 1.7
 ];
 
 export const majorDeductions = [
@@ -57,8 +57,9 @@ export const performanceCategories: PerformanceCategory[] = [
     }
 ];
 
+// Updated to include L0.5 and all 10 levels with L1 = 1x multiplier (default)
 export const multiplierLevels: Record<number, number> = {
-    1: 2, 2: 4, 3: 6, 4: 8, 5: 10
+    0.5: 0.5, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10
 };
 
 export const goeLevels: Record<number, number> = {

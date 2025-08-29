@@ -70,7 +70,7 @@ const HotkeyManager: React.FC<HotkeyManagerProps> = ({
                 };
             }
         } else if (section === 'levels') {
-            newHotkeys.levels[key] = parseInt(identifier);
+            newHotkeys.levels[key] = parseFloat(identifier);
         } else if (section === 'features') {
             newHotkeys.features[key] = identifier;
         } else if (section === 'execution') {
@@ -105,7 +105,7 @@ const HotkeyManager: React.FC<HotkeyManagerProps> = ({
             if (section === 'tricks') {
                 const trick = value as { name: string; difficulty: string };
                 if (`${trick.name}-${trick.difficulty}` === identifier) return key;
-            } else if (section === 'levels' && value === parseInt(identifier)) {
+            } else if (section === 'levels' && value === parseFloat(identifier)) {
                 return key;
             } else if (section === 'features' && value === identifier) {
                 return key;
@@ -202,14 +202,15 @@ const HotkeyManager: React.FC<HotkeyManagerProps> = ({
                         {activeSection === 'levels' && (
                             <div className="hotkey-items">
                                 <h3>Levels</h3>
-                                {[1, 2, 3, 4, 5].map(level => {
+                                {[0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(level => {
                                     const assignedKey = getAssignedKey('levels', level.toString());
                                     const isRecording = recordingKey === `levels|${level}`;
+                                    const levelDisplay = level === 0.5 ? '0.5' : level.toString();
 
                                     return (
                                         <div key={level} className="hotkey-item">
                                             <div className="hotkey-info">
-                                                <span className="hotkey-name">Level {level}</span>
+                                                <span className="hotkey-name">Level {levelDisplay}</span>
                                                 {showPoints && <span className="hotkey-value">×{multiplierLevels[level]}</span>}
                                             </div>
                                             <div className="hotkey-controls">
@@ -390,4 +391,3 @@ const HotkeyManager: React.FC<HotkeyManagerProps> = ({
 };
 
 export default HotkeyManager;
-

@@ -4,7 +4,7 @@ import { tricks, features, majorDeductions, multiplierLevels, goeLevels } from '
 import { formatScore, getDifficultyColor } from './utils';
 import HotkeyManager, { HotkeyConfig } from './HotkeyManager';
 
-interface ScoringTabProps {
+interface TechnicalTabProps {
     competitorName: string;
     setCompetitorName: (name: string) => void;
     judgeName: string;
@@ -36,37 +36,37 @@ interface ScoringTabProps {
     submitFinalScore: () => void;
 }
 
-const ScoringTab: React.FC<ScoringTabProps> = ({
-                                                   competitorName,
-                                                   setCompetitorName,
-                                                   judgeName,
-                                                   setJudgeName,
-                                                   judgeCategory,
-                                                   setJudgeCategory,
-                                                   totalScore,
-                                                   scores,
-                                                   editingCompetitor,
-                                                   selectedTrick,
-                                                   selectedDeductions,
-                                                   selectedFeatures,
-                                                   goeLevel,
-                                                   multiplierLevel,
-                                                   showPoints,
-                                                   isAdmin,
-                                                   isDisqualified,
-                                                   setIsDisqualified,
-                                                   selectTrick,
-                                                   selectDeduction,
-                                                   setGoeLevel,
-                                                   toggleMultiplier,
-                                                   toggleFeature,
-                                                   getPreviewScore,
-                                                   submitScore,
-                                                   removeScore,
-                                                   resetScores,
-                                                   cancelEdit,
-                                                   submitFinalScore
-                                               }) => {
+const ScoringTab: React.FC<TechnicalTabProps> = ({
+                                                       competitorName,
+                                                       setCompetitorName,
+                                                       judgeName,
+                                                       setJudgeName,
+                                                       judgeCategory,
+                                                       setJudgeCategory,
+                                                       totalScore,
+                                                       scores,
+                                                       editingCompetitor,
+                                                       selectedTrick,
+                                                       selectedDeductions,
+                                                       selectedFeatures,
+                                                       goeLevel,
+                                                       multiplierLevel,
+                                                       showPoints,
+                                                       isAdmin,
+                                                       isDisqualified,
+                                                       setIsDisqualified,
+                                                       selectTrick,
+                                                       selectDeduction,
+                                                       setGoeLevel,
+                                                       toggleMultiplier,
+                                                       toggleFeature,
+                                                       getPreviewScore,
+                                                       submitScore,
+                                                       removeScore,
+                                                       resetScores,
+                                                       cancelEdit,
+                                                       submitFinalScore
+                                                   }) => {
     const [showHotkeyManager, setShowHotkeyManager] = useState(false);
     const [hotkeys, setHotkeys] = useState<HotkeyConfig>({
         tricks: {},
@@ -494,18 +494,20 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                 {/* Level Selector FIRST - Disabled if DQ */}
                 <div className={`section ${isDisqualified ? 'disabled' : ''}`}>
                     <div className="section-title">
-                        Level{showPoints && (multiplierLevel ? `(×${multiplierLevels[multiplierLevel]})` : '(×1)')}:
+                        Level{showPoints && `(×${multiplierLevels[multiplierLevel || 1]})`}:
                     </div>
-                    <div className="button-row">
-                        {[1, 2, 3, 4, 5].map(level => {
+                    <div className="button-row" style={{ flexWrap: 'wrap' }}>
+                        {[0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(level => {
                             const hotkey = getHotkeyForLevel(level);
+                            const isSelected = (multiplierLevel === level) || (multiplierLevel === null && level === 1);
                             return (
                                 <button
                                     key={level}
                                     onClick={() => !isDisqualified && toggleMultiplier(level)}
-                                    className={`level-button ${multiplierLevel === level ? 'level-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
+                                    className={`level-button ${isSelected ? 'level-active' : ''} ${isDisqualified ? 'disabled' : ''}`}
                                     disabled={isDisqualified}
                                     title={hotkey ? `Hotkey: ${hotkey}` : undefined}
+                                    style={{ minWidth: level === 10 ? '50px' : '40px' }}
                                 >
                                     L{level}
                                     {hotkey && hotkeyEnabled && <div style={{fontSize: '9px', color: '#666'}}>{hotkey}</div>}
@@ -514,11 +516,9 @@ const ScoringTab: React.FC<ScoringTabProps> = ({
                             );
                         })}
                     </div>
-                    {multiplierLevel && (
-                        <div className="selected-features">
-                            Selected Level: L{multiplierLevel} {showPoints && `(×${multiplierLevels[multiplierLevel]})`}
-                        </div>
-                    )}
+                    <div className="selected-features">
+                        Selected Level: L{multiplierLevel || 1} {showPoints && `(×${multiplierLevels[multiplierLevel || 1]})`}
+                    </div>
                 </div>
 
                 {/* Feature Selector SECOND - Disabled if DQ */}
